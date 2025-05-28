@@ -36,39 +36,40 @@
 ## 4. 엔티티 관계 다이어그램 (ERD)
 
 ```
++----------------+                          +----------------+                          +----------------+
+|     USER       |                          |      ROLE      |                          |   PERMISSION   |
++----------------+                          +----------------+                          +----------------+
+| PK: id         |                          | PK: id         |                          | PK: id         |
+| username       |                          | name           |                          | name           |
+| email          |                          | description    |                          | description    |
+| password_hash  |                          |                |                          |                |
+| created_at     |                          |                |                          |                |
+| updated_at     |                          |                |                          |                |
++----------------+                          +----------------+                          +----------------+
+        |                                          |                                           |
+        |                                          |                                           |
+        v                                          v                                           v
 +----------------+       +----------------+       +----------------+
-|     USER       |       |      ROLE      |       |   PERMISSION   |
+|  USER_ROLES    |       |ROLE_PERMISSIONS|       |    SESSION     |
 +----------------+       +----------------+       +----------------+
-| PK: id         |<----->| PK: id         |<----->| PK: id         |
-| username       |       | name           |       | name           |
-| email          |       | description    |       | description    |
-| password_hash  |       |                |       |                |
-| created_at     |       |                |       |                |
-| updated_at     |       |                |       |                |
+| PK: id         |       | PK: id         |       | PK: id         |
+| FK: user_id    |       | FK: role_id    |       | FK: user_id    |
+| FK: role_id    |       | FK: permission_id      | token          |
+| assigned_at    |       | assigned_at    |       | expires_at     |
++----------------+       +----------------+       | last_active    |
+        |                        |                +----------------+
+        |                        |
+        v                        v
 +----------------+       +----------------+       +----------------+
-        |
-        |
-+----------------+       +----------------+       +----------------+
-|    SESSION     |       | CONVERSATION   |       |    MESSAGE     |
-+----------------+       +----------------+       +----------------+
-| PK: id         |<------| PK: id         |<------| PK: id         |
-| FK: user_id    |       | FK: user_id    |       | FK: conv_id    |
-| token          |       | title          |       | content        |
-| expires_at     |       | created_at     |       | role           |
-| last_active    |       | updated_at     |       | created_at     |
-+----------------+       | status         |       | embedding      |
-                         +----------------+       +----------------+
-                                 |
-                                 |
-+----------------+       +----------------+       +----------------+
-|    INTENT      |       |     ENTITY     |       |   SENTIMENT    |
+| CONVERSATION   |       |    MESSAGE     |       |    INTENT      |
 +----------------+       +----------------+       +----------------+
 | PK: id         |<------| PK: id         |       | PK: id         |
-| FK: message_id |       | FK: message_id |<------| FK: message_id |
-| name           |       | name           |       | score          |
-| confidence     |       | value          |       | label          |
-+----------------+       | type           |       +----------------+
-                         +----------------+
+| FK: user_id    |       | FK: conv_id    |<------| FK: message_id |
+| title          |       | content        |       | name           |
+| created_at     |       | role           |       | confidence     |
+| updated_at     |       | created_at     |       +----------------+
+| status         |       | embedding      |
++----------------+       +----------------+
 
 +----------------+       +----------------+       +----------------+
 |     TOOL       |       | TOOL_PARAMETER |       | TOOL_EXECUTION |

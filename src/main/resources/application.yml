@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: agi-sandbox
+  
+  # 데이터소스 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/agi_sandbox?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    username: root
+    password: 
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  # JPA 설정
+  jpa:
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        use_sql_comments: true
+    open-in-view: false
+    
+  # 파일 업로드 설정
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# 서버 설정
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.agi.sandbox: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    
+# 샌드박스 환경 설정
+sandbox:
+  # 작업 공간 설정
+  workspace:
+    base-path: /home/sandbox
+    temp-path: /home/sandbox/temp
+    output-path: /home/sandbox/output
+    
+  # 실행 환경 설정
+  execution:
+    timeout: 300 # 초 단위
+    max-memory: 1024 # MB 단위
+    
+  # 보안 설정 (간소화)
+  security:
+    enabled: false
+    
+# DL4J 설정
+dl4j:
+  model:
+    path: /home/sandbox/models

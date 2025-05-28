@@ -51,7 +51,7 @@
    - Port: 3306
    - User: root
    - Password: (설정한 비밀번호)
-   - Database: agi_sandbox
+   - Database: agi
 4. `Test Connection`을 클릭하여 연결을 테스트합니다.
 5. `Apply` 및 `OK`를 클릭합니다.
 

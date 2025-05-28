@@ -77,13 +77,13 @@
 
 | 기능 | 아키텍처 설계 | DB 스키마 | API 설계 | 객체 모델 설계 | 상태 |
 |-----|-------------|-----------|---------|--------------|------|
-| 대화 처리 | ConversationManager | CONVERSATION, MESSAGE | /api/v1/nlp/conversation | ConversationService | 일관성 유지 |
-| 도구 실행 | ToolExecutor | TOOL_EXECUTION | /api/v1/tools/execute | ToolExecutorService | 일관성 유지 |
-| 계획 생성 | PlanningEngine | PLAN, PLAN_STEP | /api/v1/plans | PlanService | 일관성 유지 |
-| 지식 검색 | InformationRetriever | KNOWLEDGE | /api/v1/knowledge | KnowledgeService | 일관성 유지 |
-| 이미지 처리 | ImageProcessor | IMAGE_METADATA | /api/v1/media/image/process | ImageProcessingService | 일관성 유지 |
-| 피드백 수집 | FeedbackCollector | FEEDBACK | /api/v1/learning/feedback | FeedbackService | 일관성 유지 |
-| 감정 감지 | EmotionDetector | SENTIMENT | /api/v1/emotion/detect | EmotionalIntelligenceModule | 일관성 유지 |
+| 대화 처리 | ConversationManager | CONVERSATION, MESSAGE | /api/nlp/conversation | ConversationService | 일관성 유지 |
+| 도구 실행 | ToolExecutor | TOOL_EXECUTION | /api/tools/execute | ToolExecutorService | 일관성 유지 |
+| 계획 생성 | PlanningEngine | PLAN, PLAN_STEP | /api/plans | PlanService | 일관성 유지 |
+| 지식 검색 | InformationRetriever | KNOWLEDGE | /api/knowledge | KnowledgeService | 일관성 유지 |
+| 이미지 처리 | ImageProcessor | IMAGE_METADATA | /api/media/image/process | ImageProcessingService | 일관성 유지 |
+| 피드백 수집 | FeedbackCollector | FEEDBACK | /api/learning/feedback | FeedbackService | 일관성 유지 |
+| 감정 감지 | EmotionDetector | SENTIMENT | /api/emotion/detect | EmotionalIntelligenceModule | 일관성 유지 |
 
 ## 4. 완전성 검증
 

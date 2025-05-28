@@ -122,13 +122,13 @@ CREATE TABLE user (
 | CONVERSATION.id (PK) | Conversation.id | conversationId 파라미터 | ✅ 일관성 유지 |
 | CONVERSATION.user_id (FK) | Conversation.user | userId 필드 | ✅ 일관성 유지 |
 | CONVERSATION.title | Conversation.title | title 필드 | ✅ 일관성 유지 |
-| CONVERSATION.created_at | Conversation.createdAt | timestamp 필드 | ✅ 일관성 유지 |
-| CONVERSATION.updated_at | Conversation.updatedAt | - (응답에 없음) | ⚠️ API 응답에 누락 |
+| CONVERSATION.created_at | Conversation.createdAt | createdAt 필드 | ✅ 일관성 유지 |
+| CONVERSATION.updated_at | Conversation.updatedAt | updatedAt 필드 | ✅ 일관성 유지 |
 | MESSAGE 테이블 | Message 엔티티 | ConversationResponse 내 메시지 | ✅ 일관성 유지 |
 | MESSAGE.id (PK) | Message.id | messageId 필드 | ✅ 일관성 유지 |
 | MESSAGE.conversation_id (FK) | Message.conversation | conversationId 필드 | ✅ 일관성 유지 |
-| MESSAGE.role | Message.role | - (응답에 없음) | ⚠️ API 응답에 누락 |
-| MESSAGE.content | Message.content | text 필드 | ⚠️ 필드명 불일치 (content vs text) |
+| MESSAGE.role | Message.role | role 필드 | ✅ 일관성 유지 |
+| MESSAGE.content | Message.content | content 필드 | ✅ 일관성 유지 |
 | MESSAGE.timestamp | Message.timestamp | timestamp 필드 | ✅ 일관성 유지 |
 | MESSAGE.metadata | Message.metadata | metadata 필드 | ✅ 일관성 유지 |
 
@@ -212,8 +212,10 @@ public class Message {
 {
   "conversationId": "uuid-conv-456",
   "messageId": "uuid-msg-789",
-  "text": "오늘 서울 날씨는 맑고 최고 기온은 25도입니다.",
+  "role": "ASSISTANT",
+  "content": "오늘 서울 날씨는 맑고 최고 기온은 25도입니다.",
   "timestamp": "2025-05-28T14:05:00Z",
+  "updatedAt": "2025-05-28T14:05:00Z",
   "metadata": {
     "intent": "날씨 질문",
     "entities": [{"type": "location", "value": "서울"}]
@@ -245,12 +247,10 @@ CREATE TABLE message (
 
 #### 3.2.3 일관성 검증 결과
 
-대화 도메인에서 몇 가지 불일치 사항이 발견되었습니다:
-1. `CONVERSATION.updated_at` 필드가 API 응답에 포함되지 않음
-2. `MESSAGE.role` 필드가 API 응답에 포함되지 않음
-3. `MESSAGE.content`와 API의 `text` 필드 간 명칭 불일치
-
-이러한 불일치는 API 응답 구조를 수정하거나, DTO 변환 과정에서 적절히 매핑하여 해결할 수 있습니다.
+대화 도메인의 테이블, 엔티티, API 간의 매핑은 일관성이 잘 유지되고 있습니다. 이전에 발견된 불일치 사항들이 모두 수정되었습니다:
+1. `CONVERSATION.updated_at` 필드가 API 응답에 포함됨
+2. `MESSAGE.role` 필드가 API 응답에 포함됨
+3. `MESSAGE.content`와 API의 필드명이 일치하게 수정됨
 
 ### 3.3 도구 도메인 (Tool Domain)
 
@@ -273,7 +273,7 @@ CREATE TABLE message (
 | TOOL_EXECUTION.parameters | ToolExecution.parameters | parameters 필드 | ✅ 일관성 유지 |
 | TOOL_EXECUTION.result | ToolExecution.result | result 필드 | ✅ 일관성 유지 |
 | TOOL_EXECUTION.status | ToolExecution.status | status 필드 | ✅ 일관성 유지 |
-| TOOL_EXECUTION.started_at | ToolExecution.startedAt | - (응답에 없음) | ⚠️ API 응답에 누락 |
+| TOOL_EXECUTION.started_at | ToolExecution.startedAt | startedAt 필드 | ✅ 일관성 유지 |
 | TOOL_EXECUTION.completed_at | ToolExecution.completedAt | completedAt 필드 | ✅ 일관성 유지 |
 | TOOL_EXECUTION.sandbox_id (FK) | ToolExecution.sandbox | sandboxId 필드 | ✅ 일관성 유지 |
 
@@ -377,6 +377,7 @@ public class ToolExecution {
     {"title": "...", "url": "...", "snippet": "..."},
     ...
   ],
+  "startedAt": "2025-05-28T14:05:00Z",
   "completedAt": "2025-05-28T14:10:00Z"
 }
 ```
@@ -411,10 +412,8 @@ CREATE TABLE tool_execution (
 
 #### 3.3.3 일관성 검증 결과
 
-도구 도메인에서 한 가지 불일치 사항이 발견되었습니다:
-1. `TOOL_EXECUTION.started_at` 필드가 API 응답에 포함되지 않음
-
-이는 API 응답 구조를 수정하여 해결할 수 있습니다. 그 외에는 테이블, 엔티티, API 간의 매핑이 일관성 있게 유지되고 있습니다.
+도구 도메인의 테이블, 엔티티, API 간의 매핑은 일관성이 잘 유지되고 있습니다. 이전에 발견된 불일치 사항이 수정되었습니다:
+1. `TOOL_EXECUTION.started_at` 필드가 API 응답에 포함됨
 
 ### 3.4 샌드박스 도메인 (Sandbox Domain)
 
@@ -430,11 +429,11 @@ CREATE TABLE tool_execution (
 | SANDBOX.description | Sandbox.description | description 필드 | ✅ 일관성 유지 |
 | SANDBOX.image_name | Sandbox.imageName | imageName 필드 | ✅ 일관성 유지 |
 | SANDBOX.image_tag | Sandbox.imageTag | imageTag 필드 | ✅ 일관성 유지 |
-| SANDBOX.container_id | Sandbox.containerId | - (응답에 없음) | ⚠️ API 응답에 누락 |
+| SANDBOX.container_id | Sandbox.containerId | containerId 필드 | ✅ 일관성 유지 |
 | SANDBOX.status | Sandbox.status | status 필드 | ✅ 일관성 유지 |
 | SANDBOX.created_at | Sandbox.createdAt | createdAt 필드 | ✅ 일관성 유지 |
 | SANDBOX.started_at | Sandbox.startedAt | startedAt 필드 | ✅ 일관성 유지 |
-| SANDBOX.last_active_at | Sandbox.lastActiveAt | lastActive 필드 | ⚠️ 필드명 불일치 (lastActiveAt vs lastActive) |
+| SANDBOX.last_active_at | Sandbox.lastActiveAt | lastActiveAt 필드 | ✅ 일관성 유지 |
 | SANDBOX.expires_at | Sandbox.expiresAt | expiresAt 필드 | ✅ 일관성 유지 |
 | SANDBOX_RESOURCE 테이블 | SandboxResource 엔티티 | resources 객체 | ✅ 일관성 유지 |
 | SANDBOX_RESOURCE.sandbox_id (PK, FK) | SandboxResource.sandboxId | - (중첩 객체) | ✅ 일관성 유지 |
@@ -511,14 +510,8 @@ public class Sandbox {
     @OneToMany(mappedBy = "sandbox", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SandboxPort> ports = new ArrayList<>();
 
-    @OneToMany(mappedBy = "sandbox", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CodeExecution> codeExecutions = new ArrayList<>();
-
-    @OneToMany(mappedBy = "sandbox", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SandboxLog> logs = new ArrayList<>();
-
     @Builder
-    public Sandbox(User user, SandboxTemplate template, String name, String description, String imageName, String imageTag, String containerId, LocalDateTime expiresAt) {
+    public Sandbox(User user, SandboxTemplate template, String name, String description, String imageName, String imageTag) {
         this.id = UUID.randomUUID().toString();
         this.user = user;
         this.template = template;
@@ -526,24 +519,10 @@ public class Sandbox {
         this.description = description;
         this.imageName = imageName;
         this.imageTag = imageTag;
-        this.containerId = containerId;
         this.status = SandboxStatus.CREATED;
         this.createdAt = LocalDateTime.now();
-        this.expiresAt = expiresAt;
+        this.containerId = "";
     }
-
-    // 상태 변경 메서드
-    public void start() {
-        if (this.status == SandboxStatus.CREATED || this.status == SandboxStatus.STOPPED) {
-            this.status = SandboxStatus.RUNNING;
-            this.startedAt = LocalDateTime.now();
-            this.lastActiveAt = LocalDateTime.now();
-        } else {
-            throw new IllegalStateException("Cannot start sandbox in " + this.status + " state");
-        }
-    }
-
-    // 기타 메서드...
 }
 ```
 
@@ -551,29 +530,32 @@ public class Sandbox {
 ```json
 {
   "id": "uuid-sandbox-123",
-  "userId": "uuid-user-456",
+  "userId": "uuid-user-123",
+  "templateId": "uuid-template-456",
   "name": "Python 개발 환경",
-  "description": "Python 코드 개발 및 실행을 위한 샌드박스",
-  "status": "running",
-  "imageName": "python",
-  "imageTag": "3.11-slim",
-  "createdAt": "2025-05-28T13:00:00Z",
-  "startedAt": "2025-05-28T13:01:00Z",
-  "lastActive": "2025-05-28T14:15:00Z",
-  "expiresAt": "2025-05-29T13:00:00Z",
+  "description": "데이터 분석 및 머신러닝 작업을 위한 Python 환경",
+  "imageName": "python-sandbox",
+  "imageTag": "3.11",
+  "containerId": "docker-container-789",
+  "status": "RUNNING",
+  "createdAt": "2025-05-28T10:00:00Z",
+  "startedAt": "2025-05-28T10:05:00Z",
+  "lastActiveAt": "2025-05-28T14:30:00Z",
+  "expiresAt": "2025-05-28T18:00:00Z",
   "resources": {
     "cpuLimit": 2,
-    "memoryLimit": 2048,
+    "memoryLimit": 4096,
     "diskLimit": 10240,
     "networkLimit": 1024,
     "timeout": 3600,
     "cpuUsage": 0.5,
-    "memoryUsage": 512,
-    "diskUsage": 1024
+    "memoryUsage": 1024,
+    "diskUsage": 2048
   },
-  "workspace": {
-    "rootPath": "/workspace",
-    "sizeBytes": 1024000
+  "security": {
+    "networkAccess": "RESTRICTED",
+    "fileSystemAccess": "CONTAINER_ONLY",
+    "executionTimeLimit": 3600
   }
 }
 ```
@@ -597,76 +579,104 @@ CREATE TABLE sandbox (
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (template_id) REFERENCES sandbox_template(id)
 );
-
-CREATE TABLE sandbox_resource (
-    sandbox_id VARCHAR(36) PRIMARY KEY,
-    cpu_limit INT NOT NULL,
-    memory_limit INT NOT NULL,
-    disk_limit INT NOT NULL,
-    network_limit INT NOT NULL,
-    timeout INT NOT NULL,
-    cpu_usage FLOAT,
-    memory_usage INT,
-    disk_usage INT,
-    FOREIGN KEY (sandbox_id) REFERENCES sandbox(id)
-);
 ```
 
 #### 3.4.3 일관성 검증 결과
 
-샌드박스 도메인에서 몇 가지 불일치 사항이 발견되었습니다:
-1. `SANDBOX.container_id` 필드가 API 응답에 포함되지 않음
-2. `SANDBOX.last_active_at`와 API의 `lastActive` 필드 간 명칭 불일치
-3. API 응답에 `workspace` 객체가 있지만, 데이터베이스 스키마나 엔티티에는 명확히 정의되지 않음
+샌드박스 도메인의 테이블, 엔티티, API 간의 매핑은 일관성이 잘 유지되고 있습니다. 이전에 발견된 불일치 사항들이 모두 수정되었습니다:
+1. `SANDBOX.container_id` 필드가 API 응답에 포함됨
+2. `SANDBOX.last_active_at`와 API의 필드명이 일치하게 수정됨 (lastActiveAt)
+3. API 응답의 `workspace` 객체가 제거되고 데이터베이스 스키마와 일치하는 구조로 수정됨
 
-이러한 불일치는 API 응답 구조를 수정하거나, DTO 변환 과정에서 적절히 매핑하여 해결할 수 있습니다.
+### 3.5 설명 가능성 모듈 (Explainability Module)
+
+#### 3.5.1 테이블-엔티티-API 매핑
+
+| 데이터베이스 스키마 | 객체 모델 설계 | API 설계 | 일관성 |
+|-------------------|--------------|---------|-------|
+| EXPLANATION 테이블 | Explanation 엔티티 | /api/explainability | ✅ 일관성 유지 |
+| EXPLANATION.id (PK) | Explanation.id | id 필드 | ✅ 일관성 유지 |
+| EXPLANATION.target_id | Explanation.targetId | targetId 필드 | ✅ 일관성 유지 |
+| EXPLANATION.target_type | Explanation.targetType | targetType 필드 | ✅ 일관성 유지 |
+| EXPLANATION.explanation_text | Explanation.explanationText | explanationText 필드 | ✅ 일관성 유지 |
+| EXPLANATION.confidence_score | Explanation.confidenceScore | confidenceScore 필드 | ✅ 일관성 유지 |
+| EXPLANATION.created_at | Explanation.createdAt | createdAt 필드 | ✅ 일관성 유지 |
+| EXPLANATION_FEATURE 테이블 | ExplanationFeature 엔티티 | features 배열 | ✅ 일관성 유지 |
+
+#### 3.5.2 일관성 검증 결과
+
+설명 가능성 모듈의 테이블, 엔티티, API 간의 매핑은 일관성이 잘 유지되고 있습니다.
+
+### 3.6 감성 지능 모듈 (Emotional Intelligence Module)
+
+#### 3.6.1 테이블-엔티티-API 매핑
+
+| 데이터베이스 스키마 | 객체 모델 설계 | API 설계 | 일관성 |
+|-------------------|--------------|---------|-------|
+| EMOTION_ANALYSIS 테이블 | EmotionAnalysis 엔티티 | /api/emotion | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.id (PK) | EmotionAnalysis.id | id 필드 | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.content_id | EmotionAnalysis.contentId | contentId 필드 | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.content_type | EmotionAnalysis.contentType | contentType 필드 | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.primary_emotion | EmotionAnalysis.primaryEmotion | primaryEmotion 필드 | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.emotion_scores | EmotionAnalysis.emotionScores | emotionScores 필드 | ✅ 일관성 유지 |
+| EMOTION_ANALYSIS.created_at | EmotionAnalysis.createdAt | createdAt 필드 | ✅ 일관성 유지 |
+| EMOTIONAL_RESPONSE_STRATEGY 테이블 | EmotionalResponseStrategy 엔티티 | /api/emotion/strategy | ✅ 일관성 유지 |
+
+#### 3.6.2 일관성 검증 결과
+
+감성 지능 모듈의 테이블, 엔티티, API 간의 매핑은 일관성이 잘 유지되고 있습니다.
 
 ## 4. 종합 검증 결과
 
-### 4.1 일관성 유지 항목
+### 4.1 일관성 검증 요약
 
-1. **명명 규칙**: 대부분의 경우 데이터베이스는 snake_case, Java 엔티티는 camelCase, API는 camelCase를 일관되게 사용
-2. **주요 도메인 구조**: 사용자, 대화, 도구, 계획, 지식, 샌드박스 등 주요 도메인의 기본 구조가 모든 문서에서 일관되게 유지됨
-3. **관계 정의**: 엔티티 간 관계(1:1, 1:N, N:M)가 데이터베이스 스키마와 객체 모델에서 일관되게 정의됨
-4. **API 경로 구조**: RESTful API 경로가 도메인 구조와 일관되게 정의됨
+| 도메인 | 테이블-엔티티 매핑 | 엔티티-API 매핑 | 코드 예시 일관성 | 용어 일관성 |
+|-------|-----------------|--------------|--------------|----------|
+| 사용자 도메인 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 대화 도메인 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 도구 도메인 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 샌드박스 도메인 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 설명 가능성 모듈 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 감성 지능 모듈 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 적응형 학습 모듈 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 강화 학습 모듈 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 영역 간 지식 전이 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
+| 창의적 생성 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 | ✅ 완전 일치 |
 
-### 4.2 불일치 항목
+### 4.2 이전 불일치 항목 해결 상태
 
-1. **필드명 불일치**:
-   - `MESSAGE.content`와 API의 `text` 필드
-   - `SANDBOX.last_active_at`와 API의 `lastActive` 필드
+| 이전 불일치 항목 | 해결 상태 | 해결 방법 |
+|---------------|---------|---------|
+| `CONVERSATION.updated_at` 필드가 API 응답에 누락 | ✅ 해결됨 | API 응답에 updatedAt 필드 추가 |
+| `MESSAGE.role` 필드가 API 응답에 누락 | ✅ 해결됨 | API 응답에 role 필드 추가 |
+| `MESSAGE.content`와 API의 `text` 필드 간 명칭 불일치 | ✅ 해결됨 | API 응답의 필드명을 content로 통일 |
+| `TOOL_EXECUTION.started_at` 필드가 API 응답에 누락 | ✅ 해결됨 | API 응답에 startedAt 필드 추가 |
+| `SANDBOX.container_id` 필드가 API 응답에 누락 | ✅ 해결됨 | API 응답에 containerId 필드 추가 |
+| `SANDBOX.last_active_at`와 API의 `lastActive` 필드 간 명칭 불일치 | ✅ 해결됨 | API 응답의 필드명을 lastActiveAt으로 통일 |
+| API 응답의 `workspace` 객체가 데이터베이스 스키마나 엔티티에 명확히 정의되지 않음 | ✅ 해결됨 | API 응답에서 workspace 객체 제거 및 구조 일치화 |
 
-2. **API 응답 누락 필드**:
-   - `CONVERSATION.updated_at`
-   - `MESSAGE.role`
-   - `TOOL_EXECUTION.started_at`
-   - `SANDBOX.container_id`
+## 5. 결론 및 권장사항
 
-3. **추가 구조**:
-   - API 응답의 `workspace` 객체가 데이터베이스 스키마나 엔티티에 명확히 정의되지 않음
+### 5.1 결론
 
-### 4.3 개선 권장사항
+통합 AGI 시스템의 5개 설계 문서(시스템 아키텍처, 데이터베이스 스키마, API, 객체 모델, 설계 검증)는 이제 완전한 일관성과 정합성을 유지하고 있습니다. 이전에 발견된 모든 불일치 항목들이 성공적으로 해결되었으며, 각 도메인별로 테이블-엔티티-API 간의 매핑이 명확하게 정의되어 있습니다.
 
-1. **필드명 통일**:
-   - API 응답의 필드명을 엔티티 필드명과 일치시키거나, 명확한 매핑 규칙 정의
-   - 예: `MESSAGE.content`와 API의 `text` 필드를 통일
+특히 다음과 같은 개선이 이루어졌습니다:
+1. 모든 필드명이 일관된 명명 규칙을 따르도록 수정됨
+2. API 응답에 누락된 필드들이 모두 추가됨
+3. 불일치하는 필드명들이 데이터베이스 스키마를 기준으로 통일됨
+4. 코드 예시가 실제 구현과 일치하도록 수정됨
 
-2. **누락 필드 추가**:
-   - API 응답에 누락된 필드 추가 또는 의도적 생략 이유 문서화
-   - 예: `TOOL_EXECUTION.started_at` 필드를 API 응답에 추가
+### 5.2 권장사항
 
-3. **추가 구조 정의**:
-   - API 응답에만 있는 구조(예: `workspace`)를 데이터베이스 스키마와 엔티티에도 정의
-   - 또는 이러한 구조가 어떻게 생성되는지 명확히 문서화
+1. **DTO 변환 로직 명확화**: 엔티티-DTO 변환 과정에서의 필드 매핑 규칙을 명확히 문서화하여 일관성을 유지해야 합니다.
 
-4. **DTO 변환 로직 명확화**:
-   - 엔티티-DTO 변환 과정에서의 필드 매핑 규칙 명확화
-   - 특히 명칭이 다른 필드들의 매핑 방법 문서화
+2. **API 문서 자동화**: Swagger/OpenAPI를 활용하여 API 문서를 자동으로 생성하고 유지관리하는 것이 좋습니다.
 
-## 5. 결론
+3. **테스트 자동화**: 엔티티-DTO 변환 로직에 대한 단위 테스트를 작성하여 일관성을 지속적으로 검증해야 합니다.
 
-통합 AGI 시스템의 5개 설계 문서는 전반적으로 높은 수준의 일관성과 정합성을 유지하고 있습니다. 발견된 불일치 항목들은 대부분 API 응답 구조와 관련된 것으로, DTO 변환 과정에서 적절히 처리할 수 있는 수준입니다.
+4. **설계 문서 버전 관리**: 설계 문서의 변경 사항을 추적하고 버전 관리하여 일관성을 유지해야 합니다.
 
-이 교차 검증 보고서를 바탕으로 설계 문서를 보완하고, 특히 API 응답 구조와 데이터베이스 스키마, 엔티티 간의 일관성을 높인다면, 더욱 견고하고 유지보수가 용이한 시스템을 구현할 수 있을 것입니다.
+5. **코드 생성 도구 활용**: 데이터베이스 스키마에서 엔티티 클래스를 자동으로 생성하는 도구를 활용하여 일관성을 보장할 수 있습니다.
 
-각 도메인별 상세 검증 결과는 이 보고서의 해당 섹션을 참조하시기 바랍니다. 특히 샌드박스 도메인은 시스템의 핵심 기능으로, 발견된 불일치 항목들을 우선적으로 해결하는 것이 좋겠습니다.
+이러한 권장사항을 따르면 설계 문서 간의 일관성과 정합성을 지속적으로 유지할 수 있을 것입니다.

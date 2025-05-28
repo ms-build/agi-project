@@ -255,7 +255,7 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
 {
   "conversationId": "uuid-conv-456",
   "messageId": "uuid-msg-789",
-  "text": "오늘 서울 날씨는 맑고 최고 기온은 25도입니다.",
+  "content": "오늘 서울 날씨는 맑고 최고 기온은 25도입니다.",
   "timestamp": "2025-05-28T14:05:00Z",
   "metadata": { // Optional
     "intent": "날씨 질문",
@@ -337,7 +337,7 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
   "imageTag": "3.11-slim",
   "createdAt": "2025-05-28T13:00:00Z",
   "startedAt": "2025-05-28T13:01:00Z",
-  "lastActive": "2025-05-28T14:15:00Z",
+  "lastActiveAt": "2025-05-28T14:15:00Z",
   "expiresAt": "2025-05-29T13:00:00Z",
   "resources": {
     "cpuLimit": 2,
@@ -350,6 +350,7 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
     "diskUsage": 1024
   },
   "workspace": {
+    "id": "uuid-workspace-789",
     "rootPath": "/workspace",
     "sizeBytes": 1024000
   }

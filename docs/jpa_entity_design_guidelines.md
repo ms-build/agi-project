@@ -255,3 +255,223 @@ public class User {
 7. 인덱스와 제약조건은 `@Table`, `@Index`, `@UniqueConstraint` 등을 통해 엔티티에 명시합니다.
 
 이 가이드라인을 준수함으로써 더 유지보수하기 쉽고, 확장 가능하며, 성능이 최적화된 엔티티 모델을 구현할 수 있습니다.
+
+
+
+## 4. DTO 사용 원칙 (Request/Response 분리)
+
+컨트롤러 계층이나 서비스 계층에서 엔티티(@Entity)를 직접 파라미터로 받거나 반환하지 않고, 반드시 Request DTO와 Response DTO를 사용하여 데이터를 전달합니다.
+
+### 권장 방식
+
+```java
+// 엔티티
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Member {
+    @Id @GeneratedValue
+    private Long id;
+    private String username;
+    private String email;
+    private int age;
+
+    @Builder
+    public Member(String username, String email, int age) {
+        this.username = username;
+        this.email = email;
+        this.age = age;
+    }
+}
+
+// Request DTO
+@Getter
+@NoArgsConstructor
+public class MemberCreateRequest {
+    private String username;
+    private String email;
+    private int age;
+
+    public Member toEntity() {
+        return Member.builder()
+            .username(username)
+            .email(email)
+            .age(age)
+            .build();
+    }
+}
+
+// Response DTO
+@Getter
+public class MemberResponse {
+    private Long id;
+    private String username;
+    private String email;
+
+    public MemberResponse(Member member) {
+        this.id = member.getId();
+        this.username = member.getUsername();
+        this.email = member.getEmail();
+        // 필요한 정보만 노출 (예: age 제외)
+    }
+}
+
+// 컨트롤러 예시
+@RestController
+@RequiredArgsConstructor
+public class MemberController {
+    private final MemberService memberService;
+
+    @PostMapping("/members")
+    public ResponseEntity<MemberResponse> createMember(@RequestBody MemberCreateRequest request) {
+        Member member = request.toEntity();
+        Member savedMember = memberService.save(member);
+        MemberResponse response = new MemberResponse(savedMember);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/members/{id}")
+    public ResponseEntity<MemberResponse> getMember(@PathVariable Long id) {
+        Member member = memberService.findById(id);
+        MemberResponse response = new MemberResponse(member);
+        return ResponseEntity.ok(response);
+    }
+}
+```
+
+### 장점
+
+1.  **계층 간 분리**: 프레젠테이션 계층(Controller)과 도메인 계층(Entity)의 의존성을 낮춥니다.
+2.  **API 스펙 명확화**: API 요청 및 응답 형식을 명확하게 정의하여 외부 시스템과의 연동을 용이하게 합니다.
+3.  **데이터 노출 제어**: 엔티티의 모든 필드가 아닌, API 스펙에 필요한 필드만 선택적으로 노출할 수 있습니다.
+4.  **엔티티 보호**: 외부로부터 엔티티의 직접적인 변경을 방지하고, DTO를 통한 유효성 검증 계층을 추가할 수 있습니다.
+5.  **유연성**: 엔티티 구조 변경 시 API 스펙에 미치는 영향을 최소화할 수 있습니다.
+
+### 구현 시 고려사항
+
+1.  요청(Request)과 응답(Response) DTO를 명확히 분리합니다.
+2.  DTO는 단순 데이터 전달 객체이므로 비즈니스 로직을 포함하지 않도록 합니다.
+3.  엔티티와 DTO 간 변환 로직은 DTO 내부(생성자, 정적 팩토리 메서드) 또는 별도의 매퍼 클래스(MapStruct 등)를 이용합니다.
+4.  필요에 따라 DTO에 유효성 검증 어노테이션(@NotNull, @Size 등)을 추가합니다.
+
+## 5. 기본 생성자 접근 제한 원칙
+
+JPA 엔티티에는 `@NoArgsConstructor(access = AccessLevel.PROTECTED)`를 사용하여 기본 생성자의 접근 수준을 `protected`로 제한합니다.
+
+### 권장 방식
+
+```java
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // 기본 생성자 접근 제한
+public class Order {
+    @Id @GeneratedValue
+    private Long id;
+    private String orderNumber;
+    private LocalDateTime orderDate;
+
+    @Builder
+    public Order(String orderNumber) {
+        this.orderNumber = orderNumber;
+        this.orderDate = LocalDateTime.now();
+    }
+}
+
+// 사용 예시
+// Order order = new Order(); // 컴파일 오류 발생 (protected 접근 불가)
+Order order = Order.builder()
+    .orderNumber("ORD12345")
+    .build();
+```
+
+### 장점
+
+1.  **객체 생성 방식 강제**: 빌더 패턴이나 정적 팩토리 메서드를 통한 객체 생성을 유도하여 일관성을 유지합니다.
+2.  **무분별한 객체 생성 방지**: 의미 없는 기본 생성자를 통한 객체 생성을 막아 잠재적인 오류를 줄입니다.
+3.  **JPA 호환성 유지**: JPA 스펙에서는 엔티티에 기본 생성자(public 또는 protected)를 요구하므로, `protected`로 설정하여 스펙을 만족시키면서 외부에서의 직접적인 사용은 제한합니다.
+
+### 구현 시 고려사항
+
+1.  Lombok의 `@NoArgsConstructor(access = AccessLevel.PROTECTED)`를 사용합니다.
+2.  객체 생성이 필요한 경우, 반드시 빌더 패턴이나 정적 팩토리 메서드를 제공합니다.
+
+## 6. 생성자 레벨 빌더 패턴 적용 원칙
+
+Lombok의 `@Builder` 어노테이션을 엔티티 클래스 레벨이 아닌, 특정 생성자 레벨에 적용하여 빌더를 생성합니다.
+
+### 권장 방식
+
+```java
+// 권장되지 않는 방식 (지양): 클래스 레벨 빌더
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder // 클래스 레벨에 적용
+@AllArgsConstructor // 모든 필드를 받는 생성자가 필요
+public class Item {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+    private int price;
+    private int stockQuantity;
+    private LocalDateTime registeredAt;
+}
+
+// 사용 예시 (지양)
+Item item = Item.builder()
+    .name("상품A")
+    .price(10000)
+    .stockQuantity(10)
+    .registeredAt(LocalDateTime.now()) // id는 자동 생성되지만 빌더에 포함될 수 있음
+    .build();
+```
+
+```java
+// 권장되는 방식 (지향): 생성자 레벨 빌더
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Item {
+    @Id @GeneratedValue
+    private Long id;
+    private String name;
+    private int price;
+    private int stockQuantity;
+    private LocalDateTime registeredAt;
+
+    @Builder // 생성자 레벨에 적용
+    public Item(String name, int price, int stockQuantity) {
+        this.name = name;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.registeredAt = LocalDateTime.now(); // 생성 시점 자동 설정
+    }
+    
+    // 필요 시 다른 생성자 추가 가능
+}
+
+// 사용 예시 (지향)
+Item item = Item.builder()
+    .name("상품A")
+    .price(10000)
+    .stockQuantity(10)
+    // registeredAt은 생성자에서 자동 설정됨
+    .build();
+```
+
+### 장점
+
+1.  **명확한 생성 책임**: 빌더를 통해 객체를 생성할 때 어떤 필드들이 초기화되는지 명확하게 제어할 수 있습니다.
+2.  **필수 값 강제 용이**: 빌더를 적용할 생성자의 파라미터를 통해 필수 값을 강제하기 용이합니다.
+3.  **내부 로직 통합**: 생성자 내에서 초기화 로직(예: `registeredAt` 자동 설정)을 통합하여 관리할 수 있습니다.
+4.  **유연성**: 여러 종류의 생성자에 각각 다른 빌더를 적용하여 다양한 객체 생성 시나리오를 지원할 수 있습니다.
+
+### 구현 시 고려사항
+
+1.  빌더를 적용할 생성자를 명시적으로 정의하고 `@Builder` 어노테이션을 해당 생성자 위에 붙입니다.
+2.  클래스 레벨의 `@Builder`는 사용하지 않습니다.
+3.  생성자에서 초기화할 필드와 그렇지 않은 필드를 명확히 구분합니다.
+4.  JPA 요구사항인 `@NoArgsConstructor(access = AccessLevel.PROTECTED)`는 별도로 유지합니다.
+
+이 가이드라인들을 종합적으로 준수함으로써 더욱 견고하고 유지보수하기 쉬우며, 협업에 용이한 JPA 엔티티 모델을 구축할 수 있습니다.
+

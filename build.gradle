@@ -29,7 +29,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     
     // 데이터베이스
-    implementation 'mysql:mysql-connector-java:8.0.33'
+    runtimeOnly 'com.mysql:mysql-connector-j'
     
     // QueryDSL
     implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'

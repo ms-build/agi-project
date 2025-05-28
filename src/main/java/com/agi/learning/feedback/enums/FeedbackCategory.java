@@ -1,12 +1,11 @@
 package com.agi.learning.feedback.enums;
 
+/**
+ * 피드백 카테고리 Enum
+ */
 public enum FeedbackCategory {
-    GENERAL,
     ACCURACY,
-    PERFORMANCE,
-    USABILITY,
-    FEATURE_REQUEST,
-    BUG_REPORT,
-    SECURITY,
-    OTHER
+    HELPFULNESS,
+    SAFETY,
+    CREATIVITY
 }

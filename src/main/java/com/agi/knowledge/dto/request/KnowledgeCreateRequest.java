@@ -2,17 +2,15 @@ package com.agi.knowledge.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 지식 생성 요청 DTO
+ */
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class KnowledgeCreateRequest {
     
@@ -28,6 +26,4 @@ public class KnowledgeCreateRequest {
     private String source;
     
     private List<String> tags;
-    
-    private Map<String, Object> metadata;
 }

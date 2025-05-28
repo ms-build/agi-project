@@ -1,17 +1,17 @@
 package com.agi.knowledge.dto.response;
 
-import lombok.AllArgsConstructor;
+import com.agi.knowledge.entity.Knowledge;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
+/**
+ * 지식 정보 응답 DTO
+ */
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class KnowledgeDto {
     private String id;
@@ -19,10 +19,31 @@ public class KnowledgeDto {
     private String content;
     private Long userId;
     private String source;
-    private List<String> tags;
-    private Map<String, Object> metadata;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private double relevanceScore;
-    private int accessCount;
+    private List<String> tags;
+    private Integer relevanceScore;
+
+    /**
+     * Knowledge 엔티티로부터 KnowledgeDto 객체 생성
+     * 
+     * @param knowledge Knowledge 엔티티
+     * @return KnowledgeDto 객체
+     */
+    public static KnowledgeDto fromEntity(Knowledge knowledge) {
+        return KnowledgeDto.builder()
+                .id(knowledge.getId())
+                .title(knowledge.getTitle())
+                .content(knowledge.getContent())
+                .userId(knowledge.getUser().getId())
+                .source(knowledge.getSource())
+                .createdAt(knowledge.getCreatedAt())
+                .updatedAt(knowledge.getUpdatedAt())
+                .tags(knowledge.getTags() != null ? 
+                        knowledge.getTags().stream()
+                                .map(tag -> tag.getName())
+                                .collect(Collectors.toList()) : 
+                        null)
+                .build();
+    }
 }

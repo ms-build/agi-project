@@ -1,26 +1,31 @@
 package com.agi.knowledge.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+/**
+ * 지식 검색 요청 DTO
+ */
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class KnowledgeSearchRequest {
     
-    @NotBlank(message = "검색어는 필수입니다")
-    private String query;
+    private String keyword;
     
-    private Integer limit;
-    
-    private Double minRelevanceScore;
-    
-    private String tag;
+    private List<String> tags;
     
     private String source;
+    
+    private Long userId;
+    
+    private String sortBy;
+    
+    private String sortDirection;
+    
+    private Integer page;
+    
+    private Integer size;
 }

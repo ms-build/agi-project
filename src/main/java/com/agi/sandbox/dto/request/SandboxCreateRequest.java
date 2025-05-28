@@ -1,17 +1,15 @@
 package com.agi.sandbox.dto.request;
 
+import com.agi.sandbox.enums.SandboxStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-import java.util.Map;
-
+/**
+ * 샌드박스 생성 요청 DTO
+ */
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
 public class SandboxCreateRequest {
     
@@ -23,9 +21,11 @@ public class SandboxCreateRequest {
     
     private String description;
     
-    private String templateId;
-    
-    private Map<String, Object> configuration;
+    private String configuration;
     
     private Integer timeoutSeconds;
+    
+    private Integer memoryLimitMb;
+    
+    private Integer cpuLimit;
 }

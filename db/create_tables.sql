@@ -43,21 +43,27 @@ CREATE TABLE permission (
 );
 
 -- 1.4 USER_ROLE 테이블
-CREATE TABLE user_role (
+CREATE TABLE user_roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
+    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE
+    FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE,
+    UNIQUE INDEX idx_user_role (user_id, role_id),
+    INDEX idx_role_id (role_id)
 );
 
 -- 1.5 ROLE_PERMISSION 테이블
-CREATE TABLE role_permission (
+CREATE TABLE role_permissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     role_id BIGINT NOT NULL,
     permission_id BIGINT NOT NULL,
-    PRIMARY KEY (role_id, permission_id),
+    assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE,
-    FOREIGN KEY (permission_id) REFERENCES permission(id) ON DELETE CASCADE
+    FOREIGN KEY (permission_id) REFERENCES permission(id) ON DELETE CASCADE,
+    UNIQUE INDEX idx_role_permission (role_id, permission_id),
+    INDEX idx_permission_id (permission_id)
 );
 
 -- 1.6 SESSION 테이블

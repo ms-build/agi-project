@@ -24,26 +24,26 @@ INSERT INTO permission (id, name, description) VALUES
 (4, 'WRITE_SANDBOX', '샌드박스 생성 및 수정 권한'),
 (5, 'ADMIN_SYSTEM', '시스템 관리 권한');
 
--- 1.4 USER_ROLE 테이블
-INSERT INTO user_role (user_id, role_id) VALUES
-(1, 1), -- admin은 ROLE_ADMIN
-(1, 2), -- admin은 ROLE_USER도 가짐
-(2, 2), -- user1은 ROLE_USER
-(3, 2), -- user2는 ROLE_USER
-(3, 3); -- user2는 ROLE_DEVELOPER도 가짐
+-- 1.4 USER_ROLES 테이블
+INSERT INTO user_roles (id, user_id, role_id, assigned_at) VALUES
+(1, 1, 1, '2025-01-01 00:10:00'), -- admin은 ROLE_ADMIN
+(2, 1, 2, '2025-01-01 00:10:00'), -- admin은 ROLE_USER도 가짐
+(3, 2, 2, '2025-01-15 10:35:00'), -- user1은 ROLE_USER
+(4, 3, 2, '2025-02-10 15:50:00'), -- user2는 ROLE_USER
+(5, 3, 3, '2025-02-10 15:55:00'); -- user2는 ROLE_DEVELOPER도 가짐
 
--- 1.5 ROLE_PERMISSION 테이블
-INSERT INTO role_permission (role_id, permission_id) VALUES
-(1, 1), -- ROLE_ADMIN은 READ_USER 권한
-(1, 2), -- ROLE_ADMIN은 WRITE_USER 권한
-(1, 3), -- ROLE_ADMIN은 READ_SANDBOX 권한
-(1, 4), -- ROLE_ADMIN은 WRITE_SANDBOX 권한
-(1, 5), -- ROLE_ADMIN은 ADMIN_SYSTEM 권한
-(2, 1), -- ROLE_USER는 READ_USER 권한
-(2, 3), -- ROLE_USER는 READ_SANDBOX 권한
-(3, 1), -- ROLE_DEVELOPER는 READ_USER 권한
-(3, 3), -- ROLE_DEVELOPER는 READ_SANDBOX 권한
-(3, 4); -- ROLE_DEVELOPER는 WRITE_SANDBOX 권한
+-- 1.5 ROLE_PERMISSIONS 테이블
+INSERT INTO role_permissions (id, role_id, permission_id, assigned_at) VALUES
+(1, 1, 1, '2025-01-01 00:15:00'), -- ROLE_ADMIN은 READ_USER 권한
+(2, 1, 2, '2025-01-01 00:15:00'), -- ROLE_ADMIN은 WRITE_USER 권한
+(3, 1, 3, '2025-01-01 00:15:00'), -- ROLE_ADMIN은 READ_SANDBOX 권한
+(4, 1, 4, '2025-01-01 00:15:00'), -- ROLE_ADMIN은 WRITE_SANDBOX 권한
+(5, 1, 5, '2025-01-01 00:15:00'), -- ROLE_ADMIN은 ADMIN_SYSTEM 권한
+(6, 2, 1, '2025-01-15 10:40:00'), -- ROLE_USER는 READ_USER 권한
+(7, 2, 3, '2025-01-15 10:40:00'), -- ROLE_USER는 READ_SANDBOX 권한
+(8, 3, 1, '2025-02-10 16:00:00'), -- ROLE_DEVELOPER는 READ_USER 권한
+(9, 3, 3, '2025-02-10 16:00:00'), -- ROLE_DEVELOPER는 READ_SANDBOX 권한
+(10, 3, 4, '2025-02-10 16:00:00'); -- ROLE_DEVELOPER는 WRITE_SANDBOX 권한
 
 -- 1.6 SESSION 테이블
 INSERT INTO session (id, user_id, token, ip_address, user_agent, created_at, last_active, expires_at) VALUES

@@ -1,5 +1,6 @@
 package com.agi.multimodal.image.entity;
 
+import com.agi.multimodal.common.entity.MediaTag;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

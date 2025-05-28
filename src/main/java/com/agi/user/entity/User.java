@@ -7,8 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -37,13 +37,8 @@ public class User {
     
     private LocalDateTime lastLoginAt;
     
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserRole> userRoles = new ArrayList<>();
     
     @Builder
     public User(String username, String password, String email, String nickname) {
@@ -77,10 +72,14 @@ public class User {
     }
     
     public void addRole(Role role) {
-        this.roles.add(role);
+        UserRole userRole = UserRole.builder()
+                .user(this)
+                .role(role)
+                .build();
+        this.userRoles.add(userRole);
     }
     
     public void removeRole(Role role) {
-        this.roles.remove(role);
+        this.userRoles.removeIf(userRole -> userRole.getRole().equals(role));
     }
 }

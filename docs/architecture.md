@@ -256,9 +256,358 @@ AGI 시스템의 일반적인 데이터 흐름은 다음과 같습니다:
 
 ### 7.8 DL4J (Deep Learning for Java)
 
-- 자연어 처리 및 머신러닝 기능
-- 신경망 모델 통합
+- 자바 환경에서 딥러닝 모델 구현 및 실행을 위한 라이브러리
+- 신경망 모델 구축, 학습 및 배포 지원
+- 자연어 처리, 이미지 인식, 시계열 분석 등 다양한 딥러닝 작업 수행
+- ND4J(N-Dimensional Arrays for Java) 기반의 효율적인 행렬 연산 제공
 
-## 8. 결론
+#### 주요 기능 및 특징:
+- **다양한 신경망 아키텍처 지원**: CNN, RNN, LSTM, GRU, Autoencoder 등
+- **사전 학습 모델 활용**: 전이 학습을 위한 사전 학습 모델 지원
+- **GPU 가속**: CUDA 및 cuDNN을 통한 GPU 가속 지원
+- **분산 학습**: Spark 통합을 통한 분산 학습 지원
+- **모델 직렬화**: 학습된 모델의 저장 및 로드 기능
 
-이 아키텍처는 Spring Boot 3.4.5, Java 17, MySQL 8, Gradle을 기반으로 하는 범용 AGI 시스템의 기본 구조를 제공합니다. 모듈화된 설계와 샌드박스 환경을 통해 다양한 작업을 안전하게 수행할 수 있으며, 확장성을 고려한 구조로 새로운 기능을 쉽게 추가할 수 있습니다.
+#### 프로젝트 내 통합:
+```java
+@Configuration
+public class DL4JConfig {
+    @Bean
+    public MultiLayerNetwork textClassificationModel() {
+        // 모델 구성
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            .seed(123)
+            .updater(new Adam(0.001))
+            .list()
+            .layer(0, new DenseLayer.Builder().nIn(inputSize).nOut(256).activation(Activation.RELU).build())
+            .layer(1, new DenseLayer.Builder().nIn(256).nOut(128).activation(Activation.RELU).build())
+            .layer(2, new OutputLayer.Builder().nIn(128).nOut(outputSize).activation(Activation.SOFTMAX)
+                    .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).build())
+            .build();
+        
+        // 모델 초기화
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+        
+        return model;
+    }
+}
+```
+
+#### 활용 예시:
+```java
+@Service
+public class NaturalLanguageProcessingService {
+    private final MultiLayerNetwork model;
+    private final TokenizerFactory tokenizerFactory;
+    
+    // 텍스트 분류 메서드
+    public ClassificationResult classifyText(String text) {
+        // 텍스트 전처리
+        List<String> tokens = tokenizerFactory.create(text).getTokens();
+        INDArray features = createFeaturesFromTokens(tokens);
+        
+        // 모델 추론
+        INDArray output = model.output(features);
+        
+        // 결과 해석 및 반환
+        return interpretOutput(output);
+    }
+}
+```
+
+### 7.9 JavaCV
+
+- OpenCV, FFmpeg 등 컴퓨터 비전 및 미디어 처리 라이브러리의 Java 바인딩
+- 이미지 및 비디오 처리, 분석, 변환 기능 제공
+- 실시간 비디오 스트림 처리 및 객체 감지 지원
+
+#### 주요 기능 및 특징:
+- **이미지 처리**: 필터링, 변환, 특징 추출, 이미지 분할 등
+- **객체 감지 및 추적**: 얼굴 인식, 객체 감지, 움직임 추적
+- **비디오 처리**: 비디오 인코딩/디코딩, 프레임 추출, 비디오 분석
+- **카메라 통합**: 웹캠 및 IP 카메라 스트림 처리
+- **다양한 포맷 지원**: 대부분의 이미지 및 비디오 포맷 지원
+
+#### 프로젝트 내 통합:
+```java
+@Configuration
+public class JavaCVConfig {
+    @Bean
+    public OpenCVFrameConverter.ToMat frameConverter() {
+        return new OpenCVFrameConverter.ToMat();
+    }
+    
+    @Bean
+    public CascadeClassifier faceDetector() {
+        CascadeClassifier faceDetector = new CascadeClassifier();
+        // 얼굴 감지를 위한 Haar Cascade 분류기 로드
+        faceDetector.load("/path/to/haarcascade_frontalface_default.xml");
+        return faceDetector;
+    }
+}
+```
+
+#### 활용 예시:
+```java
+@Service
+public class ImageProcessingService {
+    private final OpenCVFrameConverter.ToMat converter;
+    private final CascadeClassifier faceDetector;
+    
+    // 이미지에서 얼굴 감지 메서드
+    public List<Rectangle> detectFaces(byte[] imageData) {
+        // 이미지 로드
+        Mat image = imdecode(new Mat(imageData), IMREAD_COLOR);
+        
+        // 얼굴 감지
+        RectVector faces = new RectVector();
+        faceDetector.detectMultiScale(image, faces);
+        
+        // 결과 변환 및 반환
+        List<Rectangle> results = new ArrayList<>();
+        for (long i = 0; i < faces.size(); i++) {
+            Rect face = faces.get(i);
+            results.add(new Rectangle(face.x(), face.y(), face.width(), face.height()));
+        }
+        
+        return results;
+    }
+}
+```
+
+### 7.10 Spring AI
+
+- Spring 생태계와 통합된 AI 모델 및 서비스 활용을 위한 프레임워크
+- 다양한 AI 모델 및 서비스(OpenAI, Hugging Face 등)와의 통합 지원
+- 프롬프트 엔지니어링, 임베딩, 생성형 AI 기능 제공
+
+#### 주요 기능 및 특징:
+- **모델 통합**: 다양한 AI 모델 및 서비스와의 통합 인터페이스 제공
+- **프롬프트 관리**: 프롬프트 템플릿 및 관리 기능
+- **임베딩 생성**: 텍스트 및 이미지 임베딩 생성 및 활용
+- **RAG(Retrieval Augmented Generation)**: 검색 기반 생성 지원
+- **Spring 통합**: Spring의 의존성 주입, 설정 관리 등과 통합
+
+#### 프로젝트 내 통합:
+```java
+@Configuration
+public class SpringAIConfig {
+    @Bean
+    public OpenAiApi openAiApi(@Value("${openai.api-key}") String apiKey) {
+        return new OpenAiApi(apiKey);
+    }
+    
+    @Bean
+    public ChatClient chatClient(OpenAiApi openAiApi) {
+        return new OpenAiChatClient(openAiApi);
+    }
+    
+    @Bean
+    public EmbeddingClient embeddingClient(OpenAiApi openAiApi) {
+        return new OpenAiEmbeddingClient(openAiApi);
+    }
+}
+```
+
+#### 활용 예시:
+```java
+@Service
+public class AIAssistantService {
+    private final ChatClient chatClient;
+    private final EmbeddingClient embeddingClient;
+    
+    // 텍스트 생성 메서드
+    public String generateText(String prompt) {
+        Prompt aiPrompt = new Prompt(prompt);
+        ChatResponse response = chatClient.call(aiPrompt);
+        return response.getResult().getOutput().getContent();
+    }
+    
+    // 텍스트 임베딩 생성 메서드
+    public List<Double> createEmbedding(String text) {
+        EmbeddingResponse response = embeddingClient.embed(text);
+        return response.getResult().getOutput();
+    }
+}
+```
+
+### 7.11 Weka
+
+- 머신러닝 알고리즘 및 데이터 마이닝 도구를 제공하는 Java 라이브러리
+- 데이터 전처리, 분류, 회귀, 클러스터링, 연관 규칙, 시각화 기능 제공
+- GUI 인터페이스 및 프로그래밍 API 모두 지원
+
+#### 주요 기능 및 특징:
+- **다양한 알고리즘**: 분류, 회귀, 클러스터링 등 다양한 머신러닝 알고리즘 제공
+- **데이터 전처리**: 필터링, 속성 선택, 데이터 변환 등 전처리 도구
+- **교차 검증**: 모델 평가를 위한 교차 검증 기능
+- **데이터 시각화**: 데이터 및 모델 결과 시각화 도구
+- **ARFF 포맷**: 표준화된 데이터 포맷 지원
+
+#### 프로젝트 내 통합:
+```java
+@Configuration
+public class WekaConfig {
+    @Bean
+    public Classifier randomForestClassifier() throws Exception {
+        RandomForest classifier = new RandomForest();
+        classifier.setNumTrees(100);
+        classifier.setMaxDepth(0);  // 무제한
+        classifier.setSeed(42);
+        return classifier;
+    }
+    
+    @Bean
+    public Filter attributeSelection() throws Exception {
+        AttributeSelection filter = new AttributeSelection();
+        CfsSubsetEval eval = new CfsSubsetEval();
+        GreedyStepwise search = new GreedyStepwise();
+        search.setSearchBackwards(true);
+        filter.setEvaluator(eval);
+        filter.setSearch(search);
+        return filter;
+    }
+}
+```
+
+#### 활용 예시:
+```java
+@Service
+public class MachineLearningService {
+    private final Classifier classifier;
+    private final Filter attributeSelection;
+    
+    // 모델 학습 메서드
+    public void trainModel(Instances trainingData) throws Exception {
+        // 데이터 전처리
+        attributeSelection.setInputFormat(trainingData);
+        Instances filteredData = Filter.useFilter(trainingData, attributeSelection);
+        
+        // 클래스 인덱스 설정
+        filteredData.setClassIndex(filteredData.numAttributes() - 1);
+        
+        // 모델 학습
+        classifier.buildClassifier(filteredData);
+    }
+    
+    // 예측 메서드
+    public double predict(Instance instance) throws Exception {
+        // 데이터 전처리
+        attributeSelection.input(instance);
+        Instance filteredInstance = attributeSelection.output();
+        
+        // 예측 수행
+        return classifier.classifyInstance(filteredInstance);
+    }
+}
+```
+
+## 8. 멀티모달 처리 아키텍처
+
+멀티모달 처리는 텍스트, 이미지, 오디오, 비디오 등 다양한 형태의 데이터를 통합적으로 처리하는 기능을 제공합니다. DL4J, JavaCV, Spring AI를 조합하여 강력한 멀티모달 처리 시스템을 구축할 수 있습니다.
+
+### 8.1 멀티모달 처리 흐름
+
+```
++----------------+     +----------------+     +----------------+
+|                |     |                |     |                |
+|  데이터 수집     |---->|  데이터 전처리   |---->|  특징 추출      |
+|                |     |                |     |                |
++----------------+     +----------------+     +-------+--------+
+                                                      |
+                                                      v
++----------------+     +----------------+     +----------------+
+|                |     |                |     |                |
+|  결과 생성       |<----|  모델 추론      |<----|  모달 통합      |
+|                |     |                |     |                |
++----------------+     +----------------+     +----------------+
+```
+
+### 8.2 멀티모달 처리 컴포넌트
+
+```java
+@Service
+public class MultimodalProcessingService {
+    private final ImageProcessingService imageService;
+    private final NaturalLanguageProcessingService nlpService;
+    private final AIAssistantService aiService;
+    
+    // 이미지와 텍스트를 함께 처리하는 메서드
+    public MultimodalResult processImageAndText(byte[] imageData, String text) {
+        // 1. 이미지에서 객체 감지 (JavaCV)
+        List<DetectedObject> objects = imageService.detectObjects(imageData);
+        
+        // 2. 텍스트 분석 (DL4J)
+        TextAnalysisResult textAnalysis = nlpService.analyzeText(text);
+        
+        // 3. 이미지와 텍스트 정보 통합
+        String combinedContext = createCombinedContext(objects, textAnalysis);
+        
+        // 4. 통합된 컨텍스트를 기반으로 응답 생성 (Spring AI)
+        String response = aiService.generateResponse(combinedContext);
+        
+        return new MultimodalResult(objects, textAnalysis, response);
+    }
+}
+```
+
+## 9. 자가 학습 아키텍처
+
+자가 학습 시스템은 사용자 피드백, 데이터 분석, 모델 평가를 통해 지속적으로 성능을 개선하는 기능을 제공합니다. Weka와 DL4J를 활용하여 효과적인 자가 학습 시스템을 구축할 수 있습니다.
+
+### 9.1 자가 학습 흐름
+
+```
++----------------+     +----------------+     +----------------+
+|                |     |                |     |                |
+|  데이터 수집     |---->|  데이터 전처리   |---->|  모델 학습      |
+|                |     |                |     |                |
++----------------+     +----------------+     +-------+--------+
+       ^                                              |
+       |                                              v
+       |                +----------------+     +----------------+
+       |                |                |     |                |
+       +----------------+  피드백 수집     |<----|  모델 평가      |
+                        |                |     |                |
+                        +----------------+     +----------------+
+```
+
+### 9.2 자가 학습 컴포넌트
+
+```java
+@Service
+public class SelfLearningService {
+    private final MachineLearningService mlService;
+    private final DataCollectionService dataService;
+    private final ModelEvaluationService evaluationService;
+    
+    // 자가 학습 사이클 실행 메서드
+    @Scheduled(fixedRate = 86400000) // 24시간마다 실행
+    public void runLearningCycle() {
+        // 1. 새로운 데이터 수집
+        Instances newData = dataService.collectNewData();
+        
+        // 2. 현재 모델 성능 평가
+        EvaluationResult currentPerformance = evaluationService.evaluateModel(mlService.getCurrentModel());
+        
+        // 3. 새 데이터로 모델 재학습
+        Model updatedModel = mlService.retrainModel(newData);
+        
+        // 4. 업데이트된 모델 성능 평가
+        EvaluationResult newPerformance = evaluationService.evaluateModel(updatedModel);
+        
+        // 5. 성능이 향상된 경우에만 모델 업데이트
+        if (newPerformance.isBetterThan(currentPerformance)) {
+            mlService.updateCurrentModel(updatedModel);
+            log.info("모델이 성공적으로 업데이트되었습니다. 성능 향상: {}", newPerformance.getImprovementOver(currentPerformance));
+        } else {
+            log.info("모델 업데이트가 성능 향상을 가져오지 않아 유지됩니다.");
+        }
+    }
+}
+```
+
+## 10. 결론
+
+이 아키텍처는 Spring Boot 3.4.5, Java 17, MySQL 8, Gradle을 기반으로 하는 범용 AGI 시스템의 기본 구조를 제공합니다. DL4J, JavaCV, Spring AI, Weka 등의 라이브러리를 통합하여 자연어 처리, 이미지 처리, 멀티모달 처리, 자가 학습 등 다양한 AI 기능을 구현할 수 있습니다. 모듈화된 설계와 샌드박스 환경을 통해 다양한 작업을 안전하게 수행할 수 있으며, 확장성을 고려한 구조로 새로운 기능을 쉽게 추가할 수 있습니다.

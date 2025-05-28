@@ -540,1154 +540,805 @@ public class KnowledgeItem {
     private String content;
 
     @Column(nullable = false, length = 50)
-    private String contentType; // 예: TEXT, MARKDOWN, URL, FILE_REFERENCE
-
-    @Column(nullable = false, length = 100)
-    private String source; // 출처
+    private String type; // FACT, CONCEPT, PROCEDURE, RULE 등
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> metadata; // 추가 메타데이터 (예: 관련 도메인, 신뢰도 점수)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "knowledge_item_tags",
-        joinColumns = @JoinColumn(name = "knowledge_item_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> metadata; // 지식 관련 메타데이터 (예: 신뢰도, 출처)
+
+    @OneToMany(mappedBy = "knowledgeItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<KnowledgeTag> tags = new HashSet<>();
 
     @Builder
-    public KnowledgeItem(String title, String content, String contentType, String source, Map<String, Object> metadata) {
+    public KnowledgeItem(String title, String content, String type, User createdBy, Map<String, Object> metadata) {
         this.id = UUID.randomUUID().toString();
         this.title = title;
         this.content = content;
-        this.contentType = contentType;
-        this.source = source;
+        this.type = type;
+        this.createdBy = createdBy;
         this.metadata = metadata;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
-}
-
-// Entity 예시: KnowledgeTag.java
-@Entity
-@Table(name = "knowledge_tag")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class KnowledgeTag {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true, length = 100)
-    private String name;
-
-    @Builder
-    public KnowledgeTag(String name) {
-        this.name = name;
-    }
-}
-```
-
-### 4.6 메모리 도메인 (Memory Domain)
-
--   **Entity**: `MemoryRecord`
--   **Repository**: `MemoryRecordRepository`
--   **Service**: `MemoryService`
--   **Controller**: `MemoryController`
--   **DTO**: `MemoryRecordDto`, `MemoryRecallRequest`
-
-```java
-// Entity 예시: MemoryRecord.java
-@Entity
-@Table(name = "memory_record")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MemoryRecord {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 100)
-    private String memoryType; // 예: CONVERSATION_SUMMARY, USER_PREFERENCE, FACT, TASK_CONTEXT
-
-    @Lob
-    @Column(nullable = false)
-    private String content;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime lastAccessedAt;
-
-    private Double relevanceScore; // 검색 시 관련성 점수 (임시 필드)
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> metadata; // 추가 메타데이터 (예: 관련 엔티티 ID, 출처)
-
-    @Builder
-    public MemoryRecord(User user, String memoryType, String content, Map<String, Object> metadata) {
-        this.user = user;
-        this.memoryType = memoryType;
-        this.content = content;
-        this.metadata = metadata;
-        this.createdAt = LocalDateTime.now();
-        this.lastAccessedAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.7 멀티모달 도메인 (Multimodal Domain)
-
--   **Entity**: `MediaAsset`
--   **Repository**: `MediaAssetRepository`
--   **Service**: `MediaProcessingService`
--   **Controller**: `MediaController`
--   **DTO**: `MediaAssetDto`, `MediaProcessRequest`
-
-```java
-// Entity 예시: MediaAsset.java
-@Entity
-@Table(name = "media_asset")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MediaAsset {
-    @Id
-    private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 50)
-    private String mediaType; // IMAGE, AUDIO, VIDEO
-
-    @Column(nullable = false, length = 255)
-    private String originalFileName;
-
-    @Column(nullable = false, length = 255)
-    private String storagePath; // 저장 경로 (로컬 또는 클라우드)
-
-    @Column(nullable = false, length = 100)
-    private String mimeType;
-
-    @Column(nullable = false)
-    private Long sizeBytes;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> processingResults; // 처리 결과 (예: 텍스트 추출, 객체 감지, 자막)
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public MediaAsset(User user, String mediaType, String originalFileName, String storagePath, String mimeType, Long sizeBytes) {
-        this.id = UUID.randomUUID().toString();
-        this.user = user;
-        this.mediaType = mediaType;
-        this.originalFileName = originalFileName;
-        this.storagePath = storagePath;
-        this.mimeType = mimeType;
-        this.sizeBytes = sizeBytes;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.8 자가 학습 도메인 (Self-Learning Domain)
-
--   **Entity**: `ModelVersion`, `TrainingLog`, `UserFeedback`
--   **Repository**: `ModelVersionRepository`, `TrainingLogRepository`, `UserFeedbackRepository`
--   **Service**: `LearningService`, `ModelManagementService`
--   **Controller**: `LearningController`
--   **DTO**: `ModelVersionDto`, `TrainingLogDto`, `UserFeedbackDto`, `FeedbackRequest`
-
-```java
-// Entity 예시: ModelVersion.java
-@Entity
-@Table(name = "model_version")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ModelVersion {
-    @Id
-    private String id;
-
-    @Column(nullable = false, length = 100)
-    private String modelName; // 모델 이름 (예: sentiment_analyzer, text_generator)
-
-    @Column(nullable = false, length = 50)
-    private String version;
-
-    @Lob
-    private String description;
-
-    @Column(nullable = false, length = 255)
-    private String modelPath; // 학습된 모델 파일 경로
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> trainingParameters; // 학습 파라미터
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> evaluationMetrics; // 평가 지표
-
-    private boolean isActive;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public ModelVersion(String modelName, String version, String description, String modelPath, Map<String, Object> trainingParameters, Map<String, Object> evaluationMetrics) {
-        this.id = UUID.randomUUID().toString();
-        this.modelName = modelName;
-        this.version = version;
-        this.description = description;
-        this.modelPath = modelPath;
-        this.trainingParameters = trainingParameters;
-        this.evaluationMetrics = evaluationMetrics;
-        this.isActive = false;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-
-// Entity 예시: UserFeedback.java
-@Entity
-@Table(name = "user_feedback")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserFeedback {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false)
-    private String targetEntityId; // 피드백 대상 엔티티 ID (예: Message ID, ToolExecution ID)
-
-    @Column(nullable = false)
-    private String targetEntityType; // 피드백 대상 엔티티 타입
-
-    @Column(nullable = false)
-    private Integer rating; // 평점 (예: 1-5)
-
-    @Lob
-    private String comment;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public UserFeedback(User user, String targetEntityId, String targetEntityType, Integer rating, String comment) {
-        this.user = user;
-        this.targetEntityId = targetEntityId;
-        this.targetEntityType = targetEntityType;
-        this.rating = rating;
-        this.comment = comment;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.9 설명 가능성 도메인 (Explainability Domain)
-
--   **Entity**: `Explanation`
--   **Repository**: `ExplanationRepository`
--   **Service**: `ExplainabilityService`
--   **Controller**: `ExplainabilityController`
--   **DTO**: `ExplanationDto`, `ExplanationRequest`
-
-```java
-// Entity 예시: Explanation.java
-@Entity
-@Table(name = "explanation")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Explanation {
-    @Id
-    private String id;
-
-    @Column(nullable = false)
-    private String targetEntityId; // 설명 대상 엔티티 ID (예: Message ID, Decision ID)
-
-    @Column(nullable = false)
-    private String targetEntityType; // 설명 대상 엔티티 타입
-
-    @Column(nullable = false, length = 100)
-    private String explanationType; // 설명 유형 (예: LIME, SHAP, FEATURE_IMPORTANCE)
-
-    @Lob
-    @Column(nullable = false)
-    private String explanationContent; // 설명 내용 (텍스트 또는 JSON)
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> parameters; // 설명 생성 시 사용된 파라미터
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public Explanation(String targetEntityId, String targetEntityType, String explanationType, String explanationContent, Map<String, Object> parameters) {
-        this.id = UUID.randomUUID().toString();
-        this.targetEntityId = targetEntityId;
-        this.targetEntityType = targetEntityType;
-        this.explanationType = explanationType;
-        this.explanationContent = explanationContent;
-        this.parameters = parameters;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.10 감성 지능 도메인 (Emotional Intelligence Domain)
-
--   **Entity**: `EmotionAnalysis`, `EmotionalResponseStrategy`
--   **Repository**: `EmotionAnalysisRepository`, `EmotionalResponseStrategyRepository`
--   **Service**: `EmotionalIntelligenceService`
--   **Controller**: `EmotionController`
--   **DTO**: `EmotionAnalysisDto`, `EmotionalResponseStrategyDto`, `EmotionDetectionRequest`
-
-```java
-// Entity 예시: EmotionAnalysis.java
-@Entity
-@Table(name = "emotion_analysis")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EmotionAnalysis {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private String targetEntityId; // 분석 대상 엔티티 ID (예: Message ID)
-
-    @Column(nullable = false)
-    private String targetEntityType; // 분석 대상 엔티티 타입
-
-    @Column(nullable = false, length = 50)
-    private String dominantEmotion; // 주 감정
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Double> emotionScores; // 감정별 점수 (예: {"happy": 0.8, "sad": 0.1})
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public EmotionAnalysis(String targetEntityId, String targetEntityType, String dominantEmotion, Map<String, Double> emotionScores) {
-        this.targetEntityId = targetEntityId;
-        this.targetEntityType = targetEntityType;
-        this.dominantEmotion = dominantEmotion;
-        this.emotionScores = emotionScores;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-
-// Entity 예시: EmotionalResponseStrategy.java
-@Entity
-@Table(name = "emotional_response_strategy")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EmotionalResponseStrategy {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, length = 50)
-    private String detectedEmotion; // 감지된 감정
-
-    @Column(nullable = false, length = 50)
-    private String responseStyle; // 응답 스타일 (예: EMPATHETIC, NEUTRAL, SUPPORTIVE)
-
-    private Double intensityThreshold; // 감정 강도 임계값
-
-    @Lob
-    private String responseTemplate; // 응답 템플릿
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> parameters; // 추가 파라미터
-
-    @Builder
-    public EmotionalResponseStrategy(String detectedEmotion, String responseStyle, Double intensityThreshold, String responseTemplate, Map<String, Object> parameters) {
-        this.detectedEmotion = detectedEmotion;
-        this.responseStyle = responseStyle;
-        this.intensityThreshold = intensityThreshold;
-        this.responseTemplate = responseTemplate;
-        this.parameters = parameters;
-    }
-}
-```
-
-### 4.11 적응형 학습 도메인 (Adaptive Learning Domain)
-
--   **Entity**: `UserProfile`, `LearningPreference`, `AdaptationRule`
--   **Repository**: `UserProfileRepository`, `LearningPreferenceRepository`, `AdaptationRuleRepository`
--   **Service**: `AdaptiveLearningService`
--   **Controller**: `AdaptiveLearningController` (또는 다른 컨트롤러에 통합)
--   **DTO**: `UserProfileDto`, `LearningPreferenceDto`, `AdaptationRuleDto`
-
-```java
-// Entity 예시: UserProfile.java
-@Entity
-@Table(name = "user_profile")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserProfile {
-    @Id
-    private Long userId; // User ID를 PK로 사용
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @MapsId
-    @JoinColumn(name = "user_id")
-    private User user;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> interactionSummary; // 사용자 상호작용 요약 (예: 선호 주제, 자주 사용하는 도구)
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> knowledgeMap; // 사용자의 지식 수준 맵 (예: {"java": "intermediate", "python": "beginner"})
-
-    @OneToMany(mappedBy = "userProfile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<LearningPreference> preferences = new ArrayList<>();
-
-    @Column(nullable = false)
-    private LocalDateTime lastUpdatedAt;
-
-    @Builder
-    public UserProfile(User user) {
-        this.user = user;
-        this.userId = user.getId();
-        this.lastUpdatedAt = LocalDateTime.now();
-    }
-    // 프로필 업데이트 메서드 추가
-}
-
-// Entity 예시: LearningPreference.java
-@Entity
-@Table(name = "learning_preference")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class LearningPreference {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserProfile userProfile;
-
-    @Column(nullable = false, length = 100)
-    private String preferenceKey; // 선호도 키 (예: "learning_style", "difficulty_level", "preferred_format")
-
-    @Column(nullable = false)
-    private String preferenceValue; // 선호도 값 (예: "visual", "advanced", "video")
-
-    @Builder
-    public LearningPreference(UserProfile userProfile, String preferenceKey, String preferenceValue) {
-        this.userProfile = userProfile;
-        this.preferenceKey = preferenceKey;
-        this.preferenceValue = preferenceValue;
-    }
-}
-
-// Entity 예시: AdaptationRule.java
-@Entity
-@Table(name = "adaptation_rule")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AdaptationRule {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, length = 100)
-    private String ruleName;
-
-    @Lob
-    private String conditionExpression; // 규칙 적용 조건 (예: SpEL)
-
-    @Lob
-    private String actionExpression; // 적용할 액션 (예: 파라미터 조정, 추천 변경)
-
-    private boolean isActive;
-
-    @Builder
-    public AdaptationRule(String ruleName, String conditionExpression, String actionExpression) {
-        this.ruleName = ruleName;
-        this.conditionExpression = conditionExpression;
-        this.actionExpression = actionExpression;
-        this.isActive = true;
-    }
-}
-```
-
-### 4.12 강화 학습 도메인 (Reinforcement Learning Domain)
-
--   **Entity**: `RLAgentState`, `RewardSignal`, `RLPolicy`
--   **Repository**: `RLAgentStateRepository`, `RewardSignalRepository`, `RLPolicyRepository`
--   **Service**: `RLService`
--   **Controller**: `RLController` (주로 내부 사용)
--   **DTO**: `RLAgentStateDto`, `RewardSignalDto`, `RLPolicyDto`
-
-```java
-// Entity 예시: RLAgentState.java
-@Entity
-@Table(name = "rl_agent_state")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RLAgentState {
-    @Id
-    private String agentId;
-
-    @Column(nullable = false, length = 100)
-    private String environmentId; // 상호작용 환경 ID (예: Sandbox ID, Conversation ID)
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> stateRepresentation; // 상태 표현 (예: 특징 벡터)
-
-    @Column(nullable = false)
-    private LocalDateTime lastUpdatedAt;
-
-    @Builder
-    public RLAgentState(String agentId, String environmentId, Map<String, Object> stateRepresentation) {
-        this.agentId = agentId;
-        this.environmentId = environmentId;
-        this.stateRepresentation = stateRepresentation;
-        this.lastUpdatedAt = LocalDateTime.now();
-    }
-}
-
-// Entity 예시: RewardSignal.java
-@Entity
-@Table(name = "reward_signal")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RewardSignal {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private String agentId;
-
-    @Column(nullable = false)
-    private String environmentId;
-
-    @Column(nullable = false)
-    private String actionId; // 보상을 유발한 행동 ID
-
-    @Column(nullable = false)
-    private Double rewardValue;
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public RewardSignal(String agentId, String environmentId, String actionId, Double rewardValue) {
-        this.agentId = agentId;
-        this.environmentId = environmentId;
-        this.actionId = actionId;
-        this.rewardValue = rewardValue;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-
-// Entity 예시: RLPolicy.java
-@Entity
-@Table(name = "rl_policy")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RLPolicy {
-    @Id
-    private String policyId;
-
-    @Column(nullable = false, length = 100)
-    private String agentId;
-
-    @Column(nullable = false, length = 100)
-    private String policyType; // 정책 유형 (예: Q-Learning, PPO)
-
-    @Lob
-    private byte[] policyData; // 학습된 정책 데이터 (직렬화된 객체)
-
-    @Column(nullable = false)
-    private LocalDateTime lastUpdatedAt;
-
-    @Builder
-    public RLPolicy(String policyId, String agentId, String policyType, byte[] policyData) {
-        this.policyId = policyId;
-        this.agentId = agentId;
-        this.policyType = policyType;
-        this.policyData = policyData;
-        this.lastUpdatedAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.13 영역 간 지식 전이 도메인 (Cross-domain Knowledge Transfer Domain)
-
--   **Entity**: `KnowledgeSource`, `KnowledgeMapping`, `TransferLearningTask`
--   **Repository**: `KnowledgeSourceRepository`, `KnowledgeMappingRepository`, `TransferLearningTaskRepository`
--   **Service**: `KnowledgeTransferService`
--   **Controller**: `KnowledgeTransferController` (주로 내부 사용)
--   **DTO**: `KnowledgeSourceDto`, `KnowledgeMappingDto`, `TransferLearningTaskDto`
-
-```java
-// Entity 예시: KnowledgeSource.java
-@Entity
-@Table(name = "knowledge_source")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class KnowledgeSource {
-    @Id
-    private String id;
-
-    @Column(nullable = false, length = 100)
-    private String sourceName;
-
-    @Column(nullable = false, length = 100)
-    private String domain; // 지식 소스 도메인 (예: "Python Programming", "Web Scraping")
-
-    @Lob
-    private String description;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> metadata; // 추가 메타데이터 (예: 관련 모델, 데이터셋 경로)
-
-    @Builder
-    public KnowledgeSource(String sourceName, String domain, String description, Map<String, Object> metadata) {
-        this.id = UUID.randomUUID().toString();
-        this.sourceName = sourceName;
-        this.domain = domain;
-        this.description = description;
-        this.metadata = metadata;
-    }
-}
-
-// Entity 예시: KnowledgeMapping.java
-@Entity
-@Table(name = "knowledge_mapping")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class KnowledgeMapping {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_knowledge_id", nullable = false)
-    private KnowledgeSource sourceKnowledge;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "target_knowledge_id", nullable = false)
-    private KnowledgeSource targetKnowledge;
-
-    @Column(nullable = false, length = 100)
-    private String mappingType; // 매핑 유형 (예: ANALOGY, TRANSLATION, GENERALIZATION)
-
-    @Lob
-    private String mappingRule; // 매핑 규칙 또는 변환 로직
-
-    private Double confidenceScore; // 매핑 신뢰도
-
-    @Builder
-    public KnowledgeMapping(KnowledgeSource sourceKnowledge, KnowledgeSource targetKnowledge, String mappingType, String mappingRule, Double confidenceScore) {
-        this.sourceKnowledge = sourceKnowledge;
-        this.targetKnowledge = targetKnowledge;
-        this.mappingType = mappingType;
-        this.mappingRule = mappingRule;
-        this.confidenceScore = confidenceScore;
-    }
-}
-
-// Entity 예시: TransferLearningTask.java
-@Entity
-@Table(name = "transfer_learning_task")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TransferLearningTask {
-    @Id
-    private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_model_id", nullable = false)
-    private ModelVersion sourceModel;
-
-    @Column(nullable = false, length = 100)
-    private String targetDomain;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> taskParameters; // 전이 학습 파라미터
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ExecutionStatus status;
-
-    private String resultModelId; // 결과 모델 ID
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime completedAt;
-
-    @Builder
-    public TransferLearningTask(ModelVersion sourceModel, String targetDomain, Map<String, Object> taskParameters) {
-        this.id = UUID.randomUUID().toString();
-        this.sourceModel = sourceModel;
-        this.targetDomain = targetDomain;
-        this.taskParameters = taskParameters;
-        this.status = ExecutionStatus.PENDING;
-        this.createdAt = LocalDateTime.now();
-    }
-    // 상태 변경 메서드
-}
-```
-
-### 4.14 창의적 생성 도메인 (Creative Generation Domain)
-
--   **Entity**: `CreativeWork`, `GenerationPrompt`
--   **Repository**: `CreativeWorkRepository`, `GenerationPromptRepository`
--   **Service**: `CreativeGenerationService`
--   **Controller**: `CreativeController`
--   **DTO**: `CreativeWorkDto`, `GenerationPromptDto`, `GenerationRequest`
-
-```java
-// Entity 예시: CreativeWork.java
-@Entity
-@Table(name = "creative_work")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CreativeWork {
-    @Id
-    private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 100)
-    private String workType; // 생성물 유형 (예: TEXT, IMAGE, MUSIC, CODE)
-
-    @Lob
-    private String content; // 생성된 콘텐츠 (텍스트 또는 참조 경로)
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "prompt_id", nullable = false)
-    private GenerationPrompt prompt;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> metadata; // 추가 메타데이터 (예: 사용된 모델, 스타일)
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public CreativeWork(User user, String workType, String content, GenerationPrompt prompt, Map<String, Object> metadata) {
-        this.id = UUID.randomUUID().toString();
-        this.user = user;
-        this.workType = workType;
-        this.content = content;
-        this.prompt = prompt;
-        this.metadata = metadata;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-
-// Entity 예시: GenerationPrompt.java
-@Entity
-@Table(name = "generation_prompt")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GenerationPrompt {
-    @Id
-    private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Lob
-    @Column(nullable = false)
-    private String promptText;
-
-    @Column(nullable = false, length = 100)
-    private String targetWorkType; // 생성 목표 유형
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> parameters; // 생성 파라미터 (예: 스타일, 길이, 온도)
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Builder
-    public GenerationPrompt(User user, String promptText, String targetWorkType, Map<String, Object> parameters) {
-        this.id = UUID.randomUUID().toString();
-        this.user = user;
-        this.promptText = promptText;
-        this.targetWorkType = targetWorkType;
-        this.parameters = parameters;
-        this.createdAt = LocalDateTime.now();
-    }
-}
-```
-
-### 4.15 샌드박스 도메인 (Sandbox Domain)
-
--   **Entity**: `Sandbox`, `SandboxResource`, `SandboxSecurityPolicy`
--   **Repository**: `SandboxRepository`, `SandboxResourceRepository`, `SandboxSecurityPolicyRepository`
--   **Service**: `SandboxService`, `SandboxLifecycleManager`
--   **Controller**: `SandboxController`
--   **DTO**: `SandboxDto`, `SandboxResourceDto`, `SandboxSecurityPolicyDto`, `SandboxCreateRequest`, `CodeExecutionRequest`, `CodeExecutionResponse`
-
-```java
-// Entity 예시: Sandbox.java
-@Entity
-@Table(name = "sandbox")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Sandbox {
-    @Id
-    private String id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 100)
-    private String environmentType; // 예: PYTHON_3_11, NODE_20, BASH
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SandboxStatus status; // CREATED, RUNNING, PAUSED, STOPPED, ERROR
-
-    @Column(unique = true)
-    private String containerId; // Docker 컨테이너 ID
-
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime lastStartedAt;
-
-    private LocalDateTime lastStoppedAt;
-
-    private LocalDateTime lastActiveAt; // API 호출 등 마지막 활동 시간
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> configuration; // 추가 설정 (예: 포트 매핑, 볼륨 마운트)
-
-    @OneToMany(mappedBy = "sandbox", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SandboxResource> resources = new ArrayList<>();
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "security_policy_id")
-    private SandboxSecurityPolicy securityPolicy;
-
-    @Builder
-    public Sandbox(User user, String environmentType, Map<String, Object> configuration, SandboxSecurityPolicy securityPolicy) {
-        this.id = UUID.randomUUID().toString();
-        this.user = user;
-        this.environmentType = environmentType;
-        this.status = SandboxStatus.CREATED;
-        this.configuration = configuration;
-        this.securityPolicy = securityPolicy;
-        this.createdAt = LocalDateTime.now();
-        this.lastActiveAt = LocalDateTime.now();
-    }
-
-    // 상태 변경 및 컨테이너 ID 설정 메서드
-    public void updateStatus(SandboxStatus status) {
-        this.status = status;
-        LocalDateTime now = LocalDateTime.now();
-        this.lastActiveAt = now;
-        if (status == SandboxStatus.RUNNING) this.lastStartedAt = now;
-        if (status == SandboxStatus.STOPPED || status == SandboxStatus.ERROR) this.lastStoppedAt = now;
-    }
-
-    public void setContainerId(String containerId) {
-        this.containerId = containerId;
-        this.lastActiveAt = LocalDateTime.now();
-    }
-
-    public void updateLastActiveTime() {
-        this.lastActiveAt = LocalDateTime.now();
-    }
-}
-
-public enum SandboxStatus {
-    CREATED, STARTING, RUNNING, PAUSING, PAUSED, STOPPING, STOPPED, ERROR, DELETING
-}
-
-// Entity 예시: SandboxResource.java
-@Entity
-@Table(name = "sandbox_resource")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class SandboxResource {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sandbox_id", nullable = false)
-    private Sandbox sandbox;
-
-    @Column(nullable = false, length = 50)
-    private String resourceType; // CPU, MEMORY, DISK, NETWORK
-
-    @Column(nullable = false)
-    private String limitValue; // 제한 값 (예: "2 cores", "4Gi", "10Gi", "100 Mbps")
-
-    @Column(nullable = false)
-    private String usageValue; // 현재 사용량 (모니터링)
-
-    @Column(nullable = false)
-    private LocalDateTime lastMonitoredAt;
-
-    @Builder
-    public SandboxResource(Sandbox sandbox, String resourceType, String limitValue) {
-        this.sandbox = sandbox;
-        this.resourceType = resourceType;
-        this.limitValue = limitValue;
-        this.usageValue = "0"; // 초기값
-        this.lastMonitoredAt = LocalDateTime.now();
-    }
-    // 사용량 업데이트 메서드
-}
-
-// Entity 예시: SandboxSecurityPolicy.java
-@Entity
-@Table(name = "sandbox_security_policy")
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class SandboxSecurityPolicy {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true, length = 100)
-    private String policyName;
-
-    private boolean allowNetworkAccess;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private List<String> allowedHosts; // 허용된 호스트 목록
-
-    private Long maxExecutionTimeSeconds; // 최대 실행 시간 (초)
-
-    private Long maxFileSizeMb; // 최대 파일 크기 (MB)
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    private List<String> forbiddenCommands; // 금지된 명령어 목록
-
-    @Builder
-    public SandboxSecurityPolicy(String policyName, boolean allowNetworkAccess, List<String> allowedHosts, Long maxExecutionTimeSeconds, Long maxFileSizeMb, List<String> forbiddenCommands) {
-        this.policyName = policyName;
-        this.allowNetworkAccess = allowNetworkAccess;
-        this.allowedHosts = allowedHosts;
-        this.maxExecutionTimeSeconds = maxExecutionTimeSeconds;
-        this.maxFileSizeMb = maxFileSizeMb;
-        this.forbiddenCommands = forbiddenCommands;
-    }
-}
-
-// DTO 예시: SandboxDto.java
-@Getter
-@Builder
-public class SandboxDto {
-    private String id;
-    private String userId;
-    private String environmentType;
-    private SandboxStatus status;
-    private String containerId;
-    private LocalDateTime createdAt;
-    private LocalDateTime lastStartedAt;
-    private LocalDateTime lastStoppedAt;
-    private LocalDateTime lastActiveAt;
-    private Map<String, Object> configuration;
-    private List<SandboxResourceDto> resources;
-    private SandboxSecurityPolicyDto securityPolicy;
-
-    public static SandboxDto fromEntity(Sandbox sandbox) {
-        return SandboxDto.builder()
-                .id(sandbox.getId())
-                .userId(sandbox.getUser().getId().toString())
-                .environmentType(sandbox.getEnvironmentType())
-                .status(sandbox.getStatus())
-                .containerId(sandbox.getContainerId())
-                .createdAt(sandbox.getCreatedAt())
-                .lastStartedAt(sandbox.getLastStartedAt())
-                .lastStoppedAt(sandbox.getLastStoppedAt())
-                .lastActiveAt(sandbox.getLastActiveAt())
-                .configuration(sandbox.getConfiguration())
-                .resources(sandbox.getResources().stream().map(SandboxResourceDto::fromEntity).collect(Collectors.toList()))
-                .securityPolicy(sandbox.getSecurityPolicy() != null ? SandboxSecurityPolicyDto.fromEntity(sandbox.getSecurityPolicy()) : null)
-                .build();
-    }
-}
-
-// DTO 예시: SandboxResourceDto.java
-@Getter
-@Builder
-public class SandboxResourceDto {
-    private String resourceType;
-    private String limitValue;
-    private String usageValue;
-    private LocalDateTime lastMonitoredAt;
-
-    public static SandboxResourceDto fromEntity(SandboxResource resource) {
-        return SandboxResourceDto.builder()
-                .resourceType(resource.getResourceType())
-                .limitValue(resource.getLimitValue())
-                .usageValue(resource.getUsageValue())
-                .lastMonitoredAt(resource.getLastMonitoredAt())
-                .build();
-    }
-}
-
-// DTO 예시: SandboxSecurityPolicyDto.java
-@Getter
-@Builder
-public class SandboxSecurityPolicyDto {
-    private String policyName;
-    private boolean allowNetworkAccess;
-    private List<String> allowedHosts;
-    private Long maxExecutionTimeSeconds;
-    private Long maxFileSizeMb;
-    private List<String> forbiddenCommands;
-
-    public static SandboxSecurityPolicyDto fromEntity(SandboxSecurityPolicy policy) {
-        return SandboxSecurityPolicyDto.builder()
-                .policyName(policy.getPolicyName())
-                .allowNetworkAccess(policy.isAllowNetworkAccess())
-                .allowedHosts(policy.getAllowedHosts())
-                .maxExecutionTimeSeconds(policy.getMaxExecutionTimeSeconds())
-                .maxFileSizeMb(policy.getMaxFileSizeMb())
-                .forbiddenCommands(policy.getForbiddenCommands())
-                .build();
-    }
+    // 태그 추가/삭제, 내용 업데이트 등 메서드
 }
 ```
 
 ## 5. 핵심 서비스 및 모듈 인터페이스
 
-각 도메인별 핵심 서비스 인터페이스를 정의합니다. 구현체는 `service.impl` 패키지에 위치합니다.
+### 5.1 사용자 관리 서비스 (UserService)
 
--   `AuthService`: 사용자 인증, JWT 토큰 발급/검증
--   `UserService`: 사용자 정보 관리 (CRUD)
--   `ConversationService`: 대화 및 메시지 관리
--   `NlpService`: 자연어 이해, 생성, 분석 (내부적으로 DL4J, Spring AI 등 활용)
--   `ToolService`: 도구 정보 관리, 도구 검색/등록
--   `ToolExecutorService`: 도구 실행 요청 처리, 결과 반환 (필요시 `SandboxService` 호출)
--   `PlanService`: 계획 생성, 수정, 조회
--   `PlanExecutionService`: 계획 단계별 실행 관리 (필요시 `ToolExecutorService` 또는 `SandboxService` 호출)
--   `KnowledgeService`: 지식 저장, 검색, 관리 (Vector DB 연동 등)
--   `MemoryService`: 사용자별 단기/장기 기억 관리, 컨텍스트 유지
--   `MediaProcessingService`: 이미지, 오디오, 비디오 처리 (내부적으로 JavaCV, DL4J 등 활용, 필요시 `SandboxService` 호출)
--   `LearningService`: 사용자 피드백 처리, 모델 학습/평가 관리
--   `ModelManagementService`: 학습된 모델 버전 관리, 배포
--   `ExplainabilityService`: 모델 예측 및 시스템 결정 과정 설명 생성
--   `EmotionalIntelligenceService`: 텍스트/음성 기반 감정 분석, 공감적 응답 생성
--   `AdaptiveLearningService`: 사용자 프로필 기반 시스템 동작 개인화
--   `RLService`: 강화 학습 에이전트 관리, 학습 루프 실행
--   `KnowledgeTransferService`: 도메인 간 지식 전이 작업 관리
--   `CreativeGenerationService`: 텍스트, 이미지 등 창의적 콘텐츠 생성
--   `SandboxService`: 샌드박스 생성, 상태 관리, 코드/명령 실행 요청 처리
--   `SandboxLifecycleManager`: 샌드박스 리소스 관리, 비활성 샌드박스 정리
+사용자 계정 관리, 인증, 권한 부여 등을 담당하는 서비스입니다.
+
+```java
+public interface UserService {
+    UserDto createUser(UserCreateRequest request);
+    UserDto getUserById(Long id);
+    UserDto getUserByUsername(String username);
+    List<UserDto> getAllUsers(Pageable pageable);
+    UserDto updateUser(Long id, UserUpdateRequest request);
+    void deleteUser(Long id);
+    void changePassword(Long id, PasswordChangeRequest request);
+    void assignRole(Long userId, Long roleId);
+    void revokeRole(Long userId, Long roleId);
+}
+
+public interface AuthService {
+    JwtTokenResponse login(LoginRequest request);
+    void logout(String token);
+    JwtTokenResponse refreshToken(String refreshToken);
+    UserDto getCurrentUser();
+    boolean hasPermission(String permission);
+}
+```
+
+#### 5.1.1 주요 객체 관계
+
+- `UserService`는 `UserRepository`를 통해 사용자 정보를 관리합니다.
+- `AuthService`는 `JwtTokenProvider`를 사용하여 토큰 기반 인증을 처리합니다.
+- `SecurityConfig`는 Spring Security 설정을 통해 인증 및 권한 부여 규칙을 정의합니다.
+
+#### 5.1.2 데이터 흐름
+
+1. 클라이언트가 로그인 요청을 보냅니다.
+2. `AuthController`가 요청을 받아 `AuthService`로 전달합니다.
+3. `AuthService`는 사용자 인증 후 JWT 토큰을 생성하여 반환합니다.
+4. 이후 요청에서는 클라이언트가 JWT 토큰을 헤더에 포함하여 전송합니다.
+5. `JwtAuthenticationFilter`가 토큰을 검증하고 사용자 인증 정보를 설정합니다.
+6. `UserService`는 인증된 사용자 정보를 기반으로 요청을 처리합니다.
+
+### 5.2 자연어 처리 서비스 (NlpService)
+
+사용자와의 대화 처리, 의도 파악, 엔티티 추출 등을 담당하는 서비스입니다.
+
+```java
+public interface NlpService {
+    MessageDto processMessage(String conversationId, MessageRequest request);
+    List<IntentDto> extractIntents(String text, double confidenceThreshold);
+    List<EntityDto> extractEntities(String text);
+    SentimentAnalysisResult analyzeSentiment(String text);
+    String generateResponse(String conversationId, Map<String, Object> context);
+    void saveConversationContext(String conversationId, Map<String, Object> context);
+}
+
+public interface ConversationService {
+    ConversationDto createConversation(ConversationCreateRequest request);
+    ConversationDto getConversation(String id);
+    List<ConversationDto> getUserConversations(Long userId, Pageable pageable);
+    void deleteConversation(String id);
+    List<MessageDto> getConversationMessages(String conversationId, Pageable pageable);
+}
+```
+
+#### 5.2.1 주요 객체 관계
+
+- `NlpService`는 `ConversationRepository`와 `MessageRepository`를 통해 대화 데이터를 관리합니다.
+- `NlpService`는 `IntentClassifier`, `EntityExtractor`, `SentimentAnalyzer` 등의 컴포넌트를 활용합니다.
+- `ConversationService`는 대화 세션 관리를 담당합니다.
+
+#### 5.2.2 데이터 흐름
+
+1. 클라이언트가 메시지를 전송합니다.
+2. `NlpController`가 요청을 받아 `NlpService`로 전달합니다.
+3. `NlpService`는 메시지를 분석하여 의도, 엔티티, 감정 등을 추출합니다.
+4. 추출된 정보를 기반으로 적절한 응답을 생성합니다.
+5. 필요한 경우 `ToolService`를 호출하여 도구 실행을 요청합니다.
+6. 응답 메시지를 생성하여 클라이언트에 반환합니다.
+
+### 5.3 도구 관리 서비스 (ToolService)
+
+다양한 도구의 등록, 관리, 실행을 담당하는 서비스입니다.
+
+```java
+public interface ToolService {
+    ToolDto registerTool(ToolRegistrationRequest request);
+    ToolDto getTool(String id);
+    List<ToolDto> getAllTools(Pageable pageable);
+    List<ToolDto> getToolsByCategory(String category);
+    ToolDto updateTool(String id, ToolUpdateRequest request);
+    void deleteTool(String id);
+    boolean validateToolParameters(String toolId, Map<String, Object> parameters);
+}
+
+public interface ToolExecutorService {
+    ToolExecutionDto executeTool(ToolExecutionRequest request);
+    ToolExecutionDto getExecution(String id);
+    List<ToolExecutionDto> getUserExecutions(Long userId, Pageable pageable);
+    void cancelExecution(String id);
+    ToolExecutionStatus getExecutionStatus(String id);
+}
+```
+
+#### 5.3.1 주요 객체 관계
+
+- `ToolService`는 `ToolRepository`를 통해 도구 정보를 관리합니다.
+- `ToolExecutorService`는 `ToolExecutionRepository`를 통해 도구 실행 정보를 관리합니다.
+- `ToolExecutorService`는 `SandboxService`를 활용하여 안전한 도구 실행 환경을 제공합니다.
+
+#### 5.3.2 데이터 흐름
+
+1. `NlpService` 또는 클라이언트가 도구 실행을 요청합니다.
+2. `ToolController`가 요청을 받아 `ToolExecutorService`로 전달합니다.
+3. `ToolExecutorService`는 도구 파라미터를 검증합니다.
+4. 필요한 경우 `SandboxService`를 통해 샌드박스 환경에서 도구를 실행합니다.
+5. 실행 결과를 저장하고 클라이언트에 반환합니다.
+
+### 5.4 계획 관리 서비스 (PlanService)
+
+복잡한 작업의 계획 수립, 실행, 모니터링을 담당하는 서비스입니다.
+
+```java
+public interface PlanService {
+    PlanDto createPlan(PlanCreateRequest request);
+    PlanDto getPlan(String id);
+    List<PlanDto> getUserPlans(Long userId, Pageable pageable);
+    PlanDto updatePlan(String id, PlanUpdateRequest request);
+    void deletePlan(String id);
+    PlanStepDto addStep(String planId, PlanStepRequest request);
+    void removeStep(String planId, Long stepId);
+    void reorderSteps(String planId, List<Long> stepIds);
+}
+
+public interface PlanExecutionService {
+    void startPlanExecution(String planId);
+    void pausePlanExecution(String planId);
+    void resumePlanExecution(String planId);
+    void cancelPlanExecution(String planId);
+    PlanExecutionStatusDto getPlanExecutionStatus(String planId);
+    void executeNextStep(String planId);
+    void completeStep(String planId, Long stepId, Map<String, Object> result);
+    void failStep(String planId, Long stepId, String errorMessage);
+}
+```
+
+#### 5.4.1 주요 객체 관계
+
+- `PlanService`는 `PlanRepository`와 `PlanStepRepository`를 통해 계획 정보를 관리합니다.
+- `PlanExecutionService`는 계획 실행을 조정하고 모니터링합니다.
+- `PlanExecutionService`는 `ToolExecutorService`를 활용하여 계획 단계를 실행합니다.
+
+#### 5.4.2 데이터 흐름
+
+1. 클라이언트 또는 `NlpService`가 계획 생성을 요청합니다.
+2. `PlanController`가 요청을 받아 `PlanService`로 전달합니다.
+3. `PlanService`는 계획과 단계를 생성하고 저장합니다.
+4. 클라이언트가 계획 실행을 요청합니다.
+5. `PlanExecutionService`는 계획의 각 단계를 순차적으로 실행합니다.
+6. 각 단계 실행 시 필요한 도구를 `ToolExecutorService`를 통해 호출합니다.
+7. 실행 상태와 결과를 저장하고 클라이언트에 반환합니다.
+
+### 5.5 지식 관리 서비스 (KnowledgeService)
+
+시스템의 지식 베이스 관리, 검색, 업데이트를 담당하는 서비스입니다.
+
+```java
+public interface KnowledgeService {
+    KnowledgeItemDto addKnowledgeItem(KnowledgeItemRequest request);
+    KnowledgeItemDto getKnowledgeItem(String id);
+    List<KnowledgeItemDto> searchKnowledge(KnowledgeSearchRequest request);
+    KnowledgeItemDto updateKnowledgeItem(String id, KnowledgeItemRequest request);
+    void deleteKnowledgeItem(String id);
+    void addTag(String itemId, String tag);
+    void removeTag(String itemId, String tag);
+    List<String> getSimilarItems(String itemId, int limit);
+}
+
+public interface MemoryService {
+    MemoryDto createMemory(MemoryCreateRequest request);
+    MemoryDto getMemory(String id);
+    List<MemoryDto> getUserMemories(Long userId, MemoryType type, Pageable pageable);
+    List<MemoryDto> searchMemories(MemorySearchRequest request);
+    void updateMemoryImportance(String id, double importance);
+    void deleteMemory(String id);
+    void createMemoryRelation(String sourceId, String targetId, String relationType);
+    List<MemoryRelationDto> getMemoryRelations(String memoryId);
+}
+```
+
+#### 5.5.1 주요 객체 관계
+
+- `KnowledgeService`는 `KnowledgeItemRepository`와 `KnowledgeTagRepository`를 통해 지식 정보를 관리합니다.
+- `MemoryService`는 `MemoryRepository`와 `MemoryRelationRepository`를 통해 기억 정보를 관리합니다.
+- `VectorStoreService`는 벡터 임베딩 기반 유사성 검색을 지원합니다.
+
+#### 5.5.2 데이터 흐름
+
+1. `NlpService` 또는 클라이언트가 지식 검색을 요청합니다.
+2. `KnowledgeController`가 요청을 받아 `KnowledgeService`로 전달합니다.
+3. `KnowledgeService`는 키워드 또는 벡터 유사성 기반으로 관련 지식을 검색합니다.
+4. 검색 결과를 클라이언트에 반환합니다.
+5. 사용자 상호작용 정보는 `MemoryService`를 통해 저장됩니다.
+
+### 5.6 멀티모달 서비스 (MultimodalService)
+
+이미지, 오디오, 비디오 등 다양한 형식의 데이터 처리를 담당하는 서비스입니다.
+
+```java
+public interface ImageService {
+    ImageMetadataDto uploadImage(MultipartFile file, ImageUploadRequest request);
+    ImageMetadataDto getImageMetadata(String id);
+    byte[] getImageContent(String id);
+    List<ImageTagDto> analyzeImage(String id);
+    List<ImageObjectDto> detectObjects(String id);
+    ImageGenerationResultDto generateImage(ImageGenerationRequest request);
+    void deleteImage(String id);
+}
+
+public interface AudioService {
+    AudioMetadataDto uploadAudio(MultipartFile file, AudioUploadRequest request);
+    AudioMetadataDto getAudioMetadata(String id);
+    byte[] getAudioContent(String id);
+    String transcribeAudio(String id);
+    AudioGenerationResultDto generateAudio(AudioGenerationRequest request);
+    void deleteAudio(String id);
+}
+
+public interface VideoService {
+    VideoMetadataDto uploadVideo(MultipartFile file, VideoUploadRequest request);
+    VideoMetadataDto getVideoMetadata(String id);
+    byte[] getVideoContent(String id);
+    String transcribeVideo(String id);
+    List<VideoFrameDto> extractKeyFrames(String id, int maxFrames);
+    VideoGenerationResultDto generateVideo(VideoGenerationRequest request);
+    void deleteVideo(String id);
+}
+```
+
+#### 5.6.1 주요 객체 관계
+
+- `ImageService`는 `ImageMetadataRepository`와 `ImageTagRepository`를 통해 이미지 정보를 관리합니다.
+- `AudioService`는 `AudioMetadataRepository`를 통해 오디오 정보를 관리합니다.
+- `VideoService`는 `VideoMetadataRepository`를 통해 비디오 정보를 관리합니다.
+- 각 서비스는 파일 저장을 위해 `FileStorageService`를 활용합니다.
+
+#### 5.6.2 데이터 흐름
+
+1. 클라이언트가 멀티모달 콘텐츠를 업로드합니다.
+2. 해당 컨트롤러가 요청을 받아 적절한 서비스로 전달합니다.
+3. 서비스는 파일을 저장하고 메타데이터를 추출합니다.
+4. 필요한 경우 분석 작업(객체 감지, 음성 인식 등)을 수행합니다.
+5. 처리 결과를 클라이언트에 반환합니다.
+
+### 5.7 학습 및 피드백 서비스 (LearningService)
+
+시스템의 학습 데이터 관리, 모델 학습, 피드백 처리를 담당하는 서비스입니다.
+
+```java
+public interface FeedbackService {
+    FeedbackDto createFeedback(FeedbackRequest request);
+    FeedbackDto getFeedback(String id);
+    List<FeedbackDto> getEntityFeedback(String entityId, String entityType, Pageable pageable);
+    FeedbackSummaryDto getFeedbackSummary(String entityId, String entityType);
+    void deleteFeedback(String id);
+}
+
+public interface LearningDataService {
+    LearningDataDto addLearningData(LearningDataRequest request);
+    LearningDataDto getLearningData(String id);
+    List<LearningDataDto> getLearningDataByType(String type, Pageable pageable);
+    void deleteLearningData(String id);
+    void exportLearningData(String type, String format, OutputStream outputStream);
+}
+
+public interface ModelTrainingService {
+    TrainingJobDto createTrainingJob(TrainingJobRequest request);
+    TrainingJobDto getTrainingJob(String id);
+    List<TrainingJobDto> getModelTrainingJobs(String modelName, Pageable pageable);
+    void cancelTrainingJob(String id);
+    ModelVersionDto getModelVersion(String modelName, String version);
+    List<ModelVersionDto> getModelVersions(String modelName, Pageable pageable);
+    void activateModelVersion(String modelName, String version);
+}
+```
+
+#### 5.7.1 주요 객체 관계
+
+- `FeedbackService`는 `FeedbackRepository`를 통해 피드백 정보를 관리합니다.
+- `LearningDataService`는 `LearningDataRepository`를 통해 학습 데이터를 관리합니다.
+- `ModelTrainingService`는 `TrainingJobRepository`와 `ModelVersionRepository`를 통해 모델 학습 작업과 버전을 관리합니다.
+
+#### 5.7.2 데이터 흐름
+
+1. 클라이언트가 피드백을 제출합니다.
+2. `FeedbackController`가 요청을 받아 `FeedbackService`로 전달합니다.
+3. `FeedbackService`는 피드백을 저장하고 관련 엔티티에 연결합니다.
+4. `LearningDataService`는 피드백과 상호작용 데이터를 학습 데이터로 변환합니다.
+5. `ModelTrainingService`는 수집된 학습 데이터를 사용하여 모델 학습 작업을 실행합니다.
+6. 학습된 모델은 버전 관리되며 필요시 활성화됩니다.
+
+### 5.8 시스템 관리 서비스 (SystemService)
+
+시스템 설정, 모니터링, 로깅, 작업 큐 관리를 담당하는 서비스입니다.
+
+```java
+public interface SettingService {
+    SettingDto getSetting(String category, String key);
+    Map<String, String> getCategorySettings(String category);
+    void updateSetting(String category, String key, String value);
+    void deleteSetting(String category, String key);
+}
+
+public interface MonitoringService {
+    void recordMetric(String component, String metric, double value);
+    List<MetricDto> getComponentMetrics(String component, LocalDateTime from, LocalDateTime to);
+    SystemHealthDto getSystemHealth();
+    List<HealthCheckDto> getComponentsHealth();
+}
+
+public interface TaskQueueService {
+    String enqueueTask(TaskRequest request);
+    TaskStatusDto getTaskStatus(String id);
+    void cancelTask(String id);
+    List<TaskStatusDto> getPendingTasks(String taskType, Pageable pageable);
+    int getQueueSize(String taskType);
+}
+```
+
+#### 5.8.1 주요 객체 관계
+
+- `SettingService`는 `SettingRepository`를 통해 시스템 설정을 관리합니다.
+- `MonitoringService`는 `MonitoringRepository`와 `HealthCheckRepository`를 통해 모니터링 데이터를 관리합니다.
+- `TaskQueueService`는 `TaskQueueRepository`를 통해 비동기 작업을 관리합니다.
+
+#### 5.8.2 데이터 흐름
+
+1. 시스템 컴포넌트가 메트릭을 기록합니다.
+2. `MonitoringService`는 메트릭을 저장하고 분석합니다.
+3. 관리자가 시스템 상태를 조회합니다.
+4. `SystemController`가 요청을 받아 `MonitoringService`로 전달합니다.
+5. `MonitoringService`는 시스템 건강 상태를 수집하여 반환합니다.
+6. 비동기 작업은 `TaskQueueService`를 통해 큐에 추가되고 관리됩니다.
+
+### 5.9 샌드박스 모듈 (SandboxService)
+
+안전한 코드 및 도구 실행 환경을 제공하는 서비스입니다.
+
+```java
+public interface SandboxService {
+    SandboxDto createSandbox(SandboxCreateRequest request);
+    SandboxDto getSandbox(String id);
+    List<SandboxDto> getUserSandboxes(Long userId, Pageable pageable);
+    void startSandbox(String id);
+    void stopSandbox(String id);
+    void deleteSandbox(String id);
+    SandboxExecutionResultDto executeCommand(String id, CommandExecutionRequest request);
+    SandboxFileDto uploadFile(String id, MultipartFile file, String targetPath);
+    byte[] downloadFile(String id, String filePath);
+    List<SandboxFileDto> listFiles(String id, String directoryPath);
+    SandboxResourceUsageDto getResourceUsage(String id);
+}
+
+public interface SandboxSecurityService {
+    void configureSecurity(String sandboxId, SecurityConfigRequest request);
+    SecurityConfigDto getSecurityConfig(String sandboxId);
+    void validateExecution(String sandboxId, CommandExecutionRequest request);
+    void scanFileForThreats(String sandboxId, String filePath);
+    List<SecurityViolationDto> getSecurityViolations(String sandboxId);
+}
+
+public interface SandboxTemplateService {
+    SandboxTemplateDto createTemplate(SandboxTemplateRequest request);
+    SandboxTemplateDto getTemplate(String id);
+    List<SandboxTemplateDto> getAllTemplates(Pageable pageable);
+    SandboxDto createSandboxFromTemplate(String templateId, SandboxCreateRequest request);
+    void updateTemplate(String id, SandboxTemplateRequest request);
+    void deleteTemplate(String id);
+}
+```
+
+#### 5.9.1 주요 객체 관계
+
+- `SandboxService`는 `SandboxRepository`와 `SandboxExecutionRepository`를 통해 샌드박스 정보를 관리합니다.
+- `SandboxSecurityService`는 `SandboxSecurityRepository`를 통해 보안 설정을 관리합니다.
+- `SandboxTemplateService`는 `SandboxTemplateRepository`를 통해 재사용 가능한 템플릿을 관리합니다.
+- `ContainerManager`는 실제 컨테이너 생성 및 관리를 담당합니다.
+
+#### 5.9.2 데이터 흐름
+
+1. 클라이언트 또는 `ToolExecutorService`가 샌드박스 생성을 요청합니다.
+2. `SandboxController`가 요청을 받아 `SandboxService`로 전달합니다.
+3. `SandboxService`는 `ContainerManager`를 통해 격리된 컨테이너를 생성합니다.
+4. 클라이언트가 샌드박스 내에서 명령 실행을 요청합니다.
+5. `SandboxSecurityService`가 명령의 안전성을 검증합니다.
+6. `SandboxService`는 검증된 명령을 샌드박스 내에서 실행합니다.
+7. 실행 결과를 클라이언트에 반환합니다.
+
+#### 5.9.3 샌드박스와 고급 AI 기능 통합
+
+샌드박스 모듈은 다음 6개의 고급 AI 기능과 통합되어 안전하고 효과적인 실행 환경을 제공합니다:
+
+##### 자가 학습 (Self-Learning) 통합
+
+샌드박스 환경은 자가 학습 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxLearningIntegration {
+    LearningSessionDto createLearningSession(String sandboxId, LearningSessionRequest request);
+    void recordExecutionResult(String sandboxId, String executionId, boolean success);
+    void collectCodeSamples(String sandboxId, String filePath, CodeSampleType type);
+    List<LearningInsightDto> getLearningInsights(String sandboxId);
+    void applyLearnedPatterns(String sandboxId, String executionId);
+}
+```
+
+**통합 시나리오:**
+1. 샌드박스 내에서 코드 실행 시 성공/실패 패턴을 자동으로 수집합니다.
+2. 수집된 패턴은 `LearningDataService`를 통해 학습 데이터로 변환됩니다.
+3. 학습된 모델은 코드 실행 전 안전성 검증 및 최적화 제안에 활용됩니다.
+4. 샌드박스는 실행 환경 최적화를 위해 자가 학습 결과를 적용합니다.
+
+**데이터 흐름:**
+- 샌드박스 실행 결과 → 학습 데이터 수집 → 패턴 학습 → 샌드박스 실행 최적화
+
+##### 설명 가능성 (Explainability) 통합
+
+샌드박스 환경은 설명 가능성 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxExplainabilityIntegration {
+    ExecutionExplanationDto explainExecution(String sandboxId, String executionId);
+    SecurityDecisionExplanationDto explainSecurityDecision(String sandboxId, String executionId);
+    ResourceUsageExplanationDto explainResourceUsage(String sandboxId);
+    CodeAnalysisExplanationDto explainCodeAnalysis(String sandboxId, String filePath);
+    void generateExecutionReport(String sandboxId, String executionId, OutputStream outputStream);
+}
+```
+
+**통합 시나리오:**
+1. 샌드박스 내 코드 실행 결과에 대한 상세 설명을 생성합니다.
+2. 보안 제한으로 인한 실행 거부 시 그 이유를 명확히 설명합니다.
+3. 리소스 사용량 급증 원인을 분석하여 설명합니다.
+4. 코드 분석 결과를 시각화하여 사용자가 이해하기 쉽게 제공합니다.
+
+**데이터 흐름:**
+- 샌드박스 실행/보안 이벤트 → 설명 모델 처리 → 사용자 이해 가능한 설명 생성
+
+##### 감성 지능 (Emotional Intelligence) 통합
+
+샌드박스 환경은 감성 지능 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxEmotionalIntegration {
+    void recordUserFrustration(String sandboxId, String executionId);
+    void adaptResponseStyle(String sandboxId, EmotionalState userState);
+    EmotionalStateDto detectUserEmotionalState(String sandboxId, String messageId);
+    List<EmotionalPatternDto> getUserEmotionalPatterns(String sandboxId);
+    void configureFrustrationThreshold(String sandboxId, double threshold);
+}
+```
+
+**통합 시나리오:**
+1. 샌드박스 사용 중 사용자의 감정 상태를 모니터링합니다.
+2. 반복된 오류로 인한 사용자 좌절감 감지 시 더 상세한 도움말을 제공합니다.
+3. 사용자의 감정 상태에 따라 오류 메시지와 제안 스타일을 조정합니다.
+4. 학습 과정에서 사용자의 감정적 반응을 고려하여 난이도를 조절합니다.
+
+**데이터 흐름:**
+- 사용자 메시지/행동 → 감정 분석 → 샌드박스 응답 스타일 조정
+
+##### 적응형 학습 (Adaptive Learning) 통합
+
+샌드박스 환경은 적응형 학습 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxAdaptiveLearningIntegration {
+    UserProfileDto getUserProfile(String sandboxId, Long userId);
+    void updateUserProficiency(String sandboxId, String domain, ProficiencyLevel level);
+    List<LearningRecommendationDto> getRecommendations(String sandboxId);
+    void adaptEnvironment(String sandboxId, UserProfileDto profile);
+    void trackLearningProgress(String sandboxId, String domain, double progress);
+}
+```
+
+**통합 시나리오:**
+1. 사용자의 코딩 스타일, 오류 패턴, 선호 도구 등을 분석하여 프로필을 구축합니다.
+2. 사용자 숙련도에 따라 샌드박스 환경의 복잡성과 제공되는 도구를 조정합니다.
+3. 사용자 학습 진행 상황에 따라 맞춤형 예제와 도전 과제를 제공합니다.
+4. 사용자 피드백을 기반으로 환경 설정을 지속적으로 최적화합니다.
+
+**데이터 흐름:**
+- 사용자 행동 분석 → 프로필 업데이트 → 환경 적응 → 학습 진행 추적
+
+##### 강화 학습 (Reinforcement Learning) 통합
+
+샌드박스 환경은 강화 학습 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxReinforcementLearningIntegration {
+    void initializeAgent(String sandboxId, String agentType);
+    void recordState(String sandboxId, Map<String, Object> state);
+    ActionDto getNextAction(String sandboxId, Map<String, Object> state);
+    void provideReward(String sandboxId, double reward, String reason);
+    PolicyDto getCurrentPolicy(String sandboxId);
+    void exportLearnedPolicy(String sandboxId, String format, OutputStream outputStream);
+}
+```
+
+**통합 시나리오:**
+1. 샌드박스 환경을 강화 학습 에이전트의 환경으로 활용합니다.
+2. 코드 실행, 리소스 할당, 보안 설정 등을 에이전트의 행동으로 정의합니다.
+3. 실행 성공, 효율성, 보안성 등을 보상으로 설정합니다.
+4. 에이전트는 최적의 샌드박스 구성과 실행 전략을 학습합니다.
+5. 학습된 정책은 새로운 샌드박스 인스턴스 생성 시 적용됩니다.
+
+**데이터 흐름:**
+- 환경 상태 관찰 → 에이전트 행동 결정 → 행동 실행 → 보상 수집 → 정책 업데이트
+
+##### 영역 간 지식 전이 (Cross-Domain Knowledge Transfer) 통합
+
+샌드박스 환경은 영역 간 지식 전이 기능과 다음과 같이 통합됩니다:
+
+```java
+public interface SandboxKnowledgeTransferIntegration {
+    void registerDomain(String sandboxId, String domain, DomainKnowledgeDto knowledge);
+    List<DomainMappingDto> getDomainMappings(String sourceDomain, String targetDomain);
+    TransferTaskDto createTransferTask(String sandboxId, TransferTaskRequest request);
+    TransferResultDto getTransferResult(String taskId);
+    void applyTransferredKnowledge(String sandboxId, String taskId, String targetDomain);
+    List<KnowledgeMetricDto> evaluateTransferEffectiveness(String sandboxId, String taskId);
+}
+```
+
+**통합 시나리오:**
+1. 한 프로그래밍 언어에서 학습된 패턴을 다른 언어로 전이합니다.
+2. 특정 도메인(예: 이미지 처리)에서 학습된 최적화 기법을 다른 도메인(예: 텍스트 처리)에 적용합니다.
+3. 보안 취약점 패턴을 다양한 언어와 프레임워크 간에 매핑합니다.
+4. 샌드박스 환경 설정과 최적화 전략을 다른 유형의 샌드박스로 전이합니다.
+
+**데이터 흐름:**
+- 소스 도메인 지식 추출 → 도메인 간 매핑 생성 → 타겟 도메인에 지식 적용 → 전이 효과 평가
+
+#### 5.9.4 샌드박스 보안 아키텍처
+
+샌드박스 환경은 다음과 같은 다층 보안 아키텍처를 구현합니다:
+
+1. **컨테이너 격리**: Docker 또는 유사 기술을 사용하여 물리적 격리 제공
+2. **리소스 제한**: CPU, 메모리, 디스크, 네트워크 사용량 제한
+3. **네트워크 필터링**: 허용된 IP 및 포트만 접근 가능
+4. **시스템 콜 필터링**: seccomp 프로필을 통한 위험한 시스템 콜 차단
+5. **파일 시스템 격리**: 읽기 전용 볼륨과 임시 볼륨 분리
+6. **사용자 권한 제한**: 비특권 사용자로 실행
+7. **실행 시간 제한**: 최대 실행 시간 설정
+8. **코드 정적 분석**: 실행 전 코드 취약점 스캔
+
+이러한 보안 계층은 고급 AI 기능과 통합되어 지속적으로 개선되고 최적화됩니다.
 
 ## 6. DTO 변환 전략
 
--   **Entity → DTO**: 각 DTO 클래스 내에 `fromEntity(Entity entity)` 정적 팩토리 메서드를 구현하여 변환합니다. 서비스 계층에서 이 메서드를 호출하여 Controller로 DTO를 반환합니다.
--   **Request DTO → Entity**: 서비스 계층에서 Request DTO를 받아 필요한 유효성 검증 후, `@Builder`를 사용하여 엔티티를 생성하거나 기존 엔티티를 수정합니다.
--   **Lazy Loading 처리**: DTO 변환 시 필요한 연관 엔티티 정보만 로드하도록 주의합니다. `@Transactional(readOnly = true)` 어노테이션을 서비스 메서드에 적용하고, 필요한 경우 Fetch Join을 사용하거나 DTO 변환 로직 내에서 프록시 객체 초기화를 수행합니다.
--   **민감 정보 제외**: DTO 변환 시 비밀번호 등 민감 정보는 제외합니다.
+엔티티와 DTO 간의 변환은 다음과 같은 전략을 따릅니다:
 
-## 7. 샌드박스 모듈과 다른 모듈 간의 통합
+### 6.1 엔티티 → DTO 변환
 
-샌드박스 모듈은 안전한 코드 및 도구 실행 환경을 제공하며, 다른 핵심 AI 모듈들과 긴밀하게 통합되어 시스템의 지능적인 동작을 지원합니다.
+1. **정적 팩토리 메서드**: DTO 클래스 내에 `fromEntity` 정적 메서드를 구현합니다.
+2. **매퍼 클래스**: 복잡한 변환 로직은 별도의 매퍼 클래스로 분리합니다.
+3. **지연 로딩 처리**: 지연 로딩된 연관 엔티티는 필요한 경우에만 로드합니다.
+4. **순환 참조 방지**: 양방향 관계에서 순환 참조가 발생하지 않도록 주의합니다.
 
-### 7.1 자연어 처리 엔진 (NLP Engine) 통합
+### 6.2 DTO → 엔티티 변환
 
--   **상호작용**: 사용자의 자연어 명령어를 처리하여 샌드박스에서 실행할 코드나 도구를 식별합니다 (명령어 처리, 자연어 이해). 샌드박스 실행 결과를 자연어로 요약하거나 설명하여 사용자에게 전달합니다 (자연어 생성).
--   **데이터 교환**: 처리된 명령어, 실행할 코드/스크립트, 샌드박스 실행 로그, 생성된 자연어 설명.
--   **객체/인터페이스**: `NlpService`, `SandboxService`, `Message`, `ToolExecution`.
--   **시나리오**: 사용자가 "파이썬으로 현재 폴더 파일 목록 출력해줘"라고 요청하면, NLP 엔진이 이를 해석하여 `SandboxService`에 코드 실행을 요청하고, 결과를 받아 사용자에게 자연어로 설명합니다.
+1. **생성자 또는 빌더**: 엔티티 생성 시 생성자 또는 빌더를 통해 DTO 값을 전달합니다.
+2. **업데이트 메서드**: 기존 엔티티 업데이트 시 전용 메서드를 구현합니다.
+3. **ID 기반 연관 관계**: 연관 엔티티는 ID를 통해 참조합니다.
 
-### 7.2 도구 사용 프레임워크 (Tool Framework) 통합
+### 6.3 변환 예시
 
--   **상호작용**: `ToolSelector`가 선택한 도구가 샌드박스 실행을 요구할 경우, `ToolExecutor`는 `SandboxService`를 호출하여 안전한 환경에서 도구를 실행합니다.
--   **데이터 교환**: 실행할 도구 정보 (`Tool`), 입력 파라미터, 샌드박스 ID, 실행 결과 (`ToolExecution.result`), 오류 로그 (`ToolExecution.errorDetails`).
--   **객체/인터페이스**: `ToolExecutorService`, `SandboxService`, `Tool`, `ToolExecution`, `Sandbox`.
--   **시나리오**: 웹 검색 도구가 선택되면, `ToolExecutorService`는 `SandboxService`를 통해 격리된 브라우저 환경(샌드박스)에서 검색을 수행하고 결과를 `ToolExecution`에 기록합니다.
+```java
+// 엔티티 → DTO 변환 예시
+public static UserDto fromEntity(User user) {
+    return UserDto.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .email(user.getEmail())
+            .nickname(user.getNickname())
+            .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+            .build();
+}
 
-### 7.3 계획 수립 모듈 (Planning Module) 통합
+// DTO → 엔티티 변환 예시 (생성)
+public User toEntity(UserCreateRequest request) {
+    return User.builder()
+            .username(request.getUsername())
+            .email(request.getEmail())
+            .nickname(request.getNickname())
+            .password(passwordEncoder.encode(request.getPassword()))
+            .build();
+}
 
--   **상호작용**: `PlanningEngine`이 생성한 계획 단계(`PlanStep`) 중 일부는 샌드박스 실행을 포함할 수 있습니다. `PlanExecutionService`는 해당 단계에서 `SandboxService`를 호출합니다. 샌드박스 실행 결과는 계획 진행 상태 업데이트에 사용됩니다.
--   **데이터 교환**: 실행할 작업 내용 (`PlanStep.description`), 샌드박스 실행 결과, 계획 상태 업데이트 정보.
--   **객체/인터페이스**: `PlanExecutionService`, `SandboxService`, `Plan`, `PlanStep`, `ToolExecution` (PlanStep과 연관).
--   **시나리오**: "데이터 분석 보고서 작성" 계획의 "데이터 전처리 스크립트 실행" 단계에서 `PlanExecutionService`는 `SandboxService`를 호출하여 파이썬 스크립트를 실행합니다.
+// DTO → 엔티티 변환 예시 (업데이트)
+public void updateFromDto(User user, UserUpdateRequest request) {
+    if (request.getNickname() != null) {
+        user.updateNickname(request.getNickname());
+    }
+    if (request.getEmail() != null) {
+        user.updateEmail(request.getEmail());
+    }
+}
+```
 
-### 7.4 지식 및 기억 시스템 (Knowledge & Memory System) 통합
+## 7. 예외 처리 전략
 
--   **상호작용**: 샌드박스에서 성공적으로 실행된 코드 스니펫, 유용한 스크립트, 도구 사용 결과 등은 `KnowledgeItem`으로 저장될 수 있습니다. `MemoryService`는 특정 샌드박스 작업과 관련된 컨텍스트(`MemoryRecord`)를 저장하고 인출하여 장기적인 작업 흐름을 지원합니다.
--   **데이터 교환**: 샌드박스 실행 로그, 성공적인 코드/스크립트, 도구 결과, 관련 컨텍스트 정보.
--   **객체/인터페이스**: `KnowledgeService`, `MemoryService`, `SandboxService`, `ToolExecution`, `KnowledgeItem`, `MemoryRecord`.
--   **시나리오**: 샌드박스에서 특정 라이브러리를 사용하는 파이썬 코드가 성공적으로 실행되면, 해당 코드는 `KnowledgeItem`으로 저장되어 나중에 유사한 요청 시 재사용될 수 있습니다.
+시스템은 다음과 같은 예외 처리 전략을 사용합니다:
 
-### 7.5 멀티모달 처리 기능 (Multimodal Processing) 통합
+### 7.1 예외 계층 구조
 
--   **상호작용**: 이미지/오디오/비디오 파일을 처리하는 도구(예: OCR, STT)는 샌드박스 환경 내에서 실행될 수 있습니다. `MediaProcessingService`는 샌드박스를 활용하여 외부 라이브러리나 도구를 안전하게 실행합니다.
--   **데이터 교환**: 처리할 미디어 파일 경로 (`MediaAsset.storagePath`), 처리 옵션, 처리 결과 (`MediaAsset.processingResults`).
--   **객체/인터페이스**: `MediaProcessingService`, `SandboxService`, `MediaAsset`, `ToolExecution`.
--   **시나리오**: 사용자가 이미지를 업로드하고 텍스트 추출을 요청하면, `MediaProcessingService`는 샌드박스 내에서 OCR 도구를 실행하여 결과를 `MediaAsset`에 저장합니다.
+```
+- BaseException
+  - BusinessException
+    - EntityNotFoundException
+    - InvalidParameterException
+    - AccessDeniedException
+    - DuplicateEntityException
+  - SystemException
+    - ExternalSystemException
+    - InternalSystemException
+```
 
-### 7.6 자가 학습 기능 (Self-Learning) 통합
+### 7.2 예외 처리 방식
 
--   **상호작용**: 샌드박스 내 도구 실행 성공/실패 결과 (`ToolExecution`) 및 관련 사용자 피드백 (`UserFeedback`)은 `LearningService`로 전달되어 모델 개선에 활용됩니다. 예를 들어, 특정 유형의 코드 생성 실패 패턴을 학습하여 모델을 개선할 수 있습니다.
--   **데이터 교환**: `ToolExecution` 상태 및 결과, `UserFeedback` 데이터, 학습 데이터셋, 업데이트된 모델 정보 (`ModelVersion`).
--   **객체/인터페이스**: `LearningService`, `SandboxService`, `ToolExecution`, `UserFeedback`, `ModelVersion`.
--   **시나리오**: 사용자가 샌드박스에서 실행된 코드 생성 결과에 대해 낮은 평점(`UserFeedback`)을 주면, `LearningService`는 해당 코드와 피드백을 분석하여 코드 생성 모델(`ModelVersion`) 업데이트를 트리거할 수 있습니다.
+1. **@ControllerAdvice**: 전역 예외 처리기를 통해 일관된 오류 응답을 제공합니다.
+2. **예외 코드**: 각 예외 유형에 고유한 코드를 할당하여 클라이언트가 쉽게 식별할 수 있도록 합니다.
+3. **로깅**: 예외 발생 시 적절한 로그 레벨로 기록합니다.
+4. **트랜잭션 관리**: 비즈니스 예외 발생 시 트랜잭션을 롤백합니다.
 
-### 7.7 설명 가능성 (Explainability) 통합
+### 7.3 예외 응답 형식
 
--   **상호작용**: `ExplainabilityService`는 샌드박스 내에서 발생한 오류의 원인(`ToolExecution.errorDetails`)이나 특정 도구/코드 실행 결정 과정을 설명하는 데 사용될 수 있습니다. 샌드박스 실행 로그나 상태 정보를 분석하여 설명을 생성합니다.
--   **데이터 교환**: 설명 요청 대상 ID (`ToolExecution` ID, `PlanStep` ID), 샌드박스 로그, 실행 컨텍스트, 생성된 설명 (`Explanation`).
--   **객체/인터페이스**: `ExplainabilityService`, `SandboxService`, `ToolExecution`, `PlanStep`, `Explanation`.
--   **시나리오**: 샌드박스에서 스크립트 실행이 실패했을 때, 사용자가 "왜 실패했어?"라고 물으면, `ExplainabilityService`는 관련 `ToolExecution` 로그를 분석하여 실패 원인에 대한 `Explanation`을 생성합니다.
+```json
+{
+  "code": "USER_NOT_FOUND",
+  "message": "사용자를 찾을 수 없습니다.",
+  "timestamp": "2025-05-28T10:15:30.123Z",
+  "path": "/api/users/123",
+  "details": {
+    "userId": 123
+  }
+}
+```
 
-### 7.8 감성 지능 (Emotional Intelligence) 통합
+## 8. 보안 설계
 
--   **상호작용**: 샌드박스 작업 요청 메시지(`Message`)의 감정 분석 결과(`EmotionAnalysis`)를 바탕으로 `EmotionalIntelligenceService`는 샌드박스 실행 전 경고나 안내 메시지의 톤을 조절할 수 있습니다. 샌드박스 작업 실패 시 공감적인 응답을 생성하는 데 활용될 수 있습니다.
--   **데이터 교환**: 사용자 메시지, 감정 분석 결과 (`EmotionAnalysis`), 생성된 응답 텍스트.
--   **객체/인터페이스**: `EmotionalIntelligenceService`, `SandboxService`, `Message`, `EmotionAnalysis`, `EmotionalResponseStrategy`.
--   **시나리오**: 사용자가 좌절감을 표현하며 샌드박스 작업 재시도를 요청할 경우(`EmotionAnalysis`), `EmotionalIntelligenceService`는 공감적인 응답(`EmotionalResponseStrategy`)을 생성하고, `SandboxService`는 주의 깊게 작업을 처리합니다.
+시스템은 다음과 같은 보안 설계를 적용합니다:
 
-### 7.9 적응형 학습 (Adaptive Learning) 통합
+### 8.1 인증 및 권한 부여
 
--   **상호작용**: `AdaptiveLearningService`는 사용자의 샌드박스 사용 패턴(자주 사용하는 언어, 성공률 등)을 `UserProfile`에 기록하고, 이를 바탕으로 샌드박스 환경 설정(예: 기본 언어 버전, 리소스 할당량)이나 관련 도구 추천을 개인화합니다.
--   **데이터 교환**: `ToolExecution` 기록, `UserProfile` 데이터, `LearningPreference`, 개인화된 설정/추천.
--   **객체/인터페이스**: `AdaptiveLearningService`, `SandboxService`, `UserProfile`, `ToolExecution`, `LearningPreference`.
--   **시나리오**: 사용자가 주로 파이썬 3.11 버전의 샌드박스 작업을 성공적으로 수행하는 것을 `AdaptiveLearningService`가 학습하면, 이후 파이썬 관련 작업 요청 시 기본 샌드박스 환경으로 파이썬 3.11을 우선 제안할 수 있습니다.
+1. **JWT 기반 인증**: 토큰 기반 인증을 통해 상태 비저장(Stateless) 인증을 구현합니다.
+2. **역할 기반 접근 제어(RBAC)**: 사용자 역할에 따라 접근 권한을 관리합니다.
+3. **메서드 수준 보안**: `@PreAuthorize` 어노테이션을 사용하여 메서드 수준에서 권한을 검사합니다.
 
-### 7.10 강화 학습 (Reinforcement Learning) 통합
+### 8.2 데이터 보안
 
--   **상호작용**: 샌드박스는 강화 학습 에이전트(`Agent`)가 상호작용하는 환경(`Environment`) 역할을 할 수 있습니다. 에이전트는 샌드박스 내에서 특정 목표(예: 코드 최적화, 작업 성공률 최대화)를 달성하기 위해 행동(`Action`, 예: 코드 수정, 파라미터 조정)을 수행하고, 결과에 따라 보상(`RewardSignal`)을 받습니다. `RLPolicy`는 샌드박스 상태(`State`)를 기반으로 최적의 행동을 결정합니다.
--   **데이터 교환**: 샌드박스 상태 정보, 에이전트 행동, 실행 결과 (`ToolExecution`), 보상 신호 (`RewardSignal`), 학습된 정책 (`RLPolicy`).
--   **객체/인터페이스**: `SandboxService` (Environment 역할), `RLService` (Agent 역할), `RLAgentState`, `RewardSignal`, `RLPolicy`, `ToolExecution`.
--   **시나리오**: 코드 실행 시간을 단축하는 목표를 가진 RL 에이전트는 샌드박스 내에서 코드를 반복 실행하며 다양한 최적화 기법(행동)을 시도하고, 실행 시간(결과)에 따라 보상을 받아 정책을 업데이트합니다.
+1. **암호화**: 민감한 데이터는 저장 및 전송 시 암호화합니다.
+2. **비밀번호 해싱**: 사용자 비밀번호는 BCrypt 등의 강력한 해싱 알고리즘을 사용합니다.
+3. **데이터 접근 제어**: 사용자는 자신의 데이터만 접근할 수 있도록 제한합니다.
 
-### 7.11 영역 간 지식 전이 (Cross-domain Knowledge Transfer) 통합
+### 8.3 API 보안
 
--   **상호작용**: 샌드박스에서 특정 언어(예: Python)로 작성된 성공적인 스크립트나 문제 해결 패턴(`KnowledgeItem`)은 `KnowledgeService`에 의해 분석되어 다른 언어(예: JavaScript)나 유사한 문제(`KnowledgeMapping`)에 적용될 수 있습니다. 샌드박스 환경 자체를 특정 영역의 지식을 테스트하거나 전이시키는 실험 공간(`TransferLearningTask`)으로 활용할 수 있습니다.
--   **데이터 교환**: 성공적인 샌드박스 실행 결과 (`ToolExecution`), 저장된 지식 (`KnowledgeItem`), 지식 매핑 정보 (`KnowledgeMapping`), 전이 학습 작업 정보 (`TransferLearningTask`).
--   **객체/인터페이스**: `KnowledgeService`, `SandboxService`, `ToolExecution`, `KnowledgeItem`, `KnowledgeMapping`, `TransferLearningTask`.
--   **시나리오**: 샌드박스에서 파이썬으로 구현된 데이터 정규화 로직(`KnowledgeItem`)이 성공적이었다면, `KnowledgeService`는 이 로직을 자바스크립트로 변환하여 유사한 웹 기반 데이터 처리 작업에 적용하도록 제안할 수 있습니다.
+1. **HTTPS**: 모든 API 통신은 HTTPS를 통해 이루어집니다.
+2. **CORS 설정**: 허용된 오리진만 API에 접근할 수 있도록 설정합니다.
+3. **입력 검증**: 모든 사용자 입력은 서버 측에서 검증합니다.
+4. **레이트 리밋**: API 호출 횟수를 제한하여 DoS 공격을 방지합니다.
 
-## 8. 추가 고려 사항
+### 8.4 샌드박스 보안
 
--   **트랜잭션 관리**: 서비스 계층에서 `@Transactional` 어노테이션을 사용하여 트랜잭션을 관리합니다. 읽기 전용 작업에는 `readOnly = true` 옵션을 사용합니다.
--   **동시성 제어**: 여러 사용자가 동시에 시스템을 사용할 경우 발생할 수 있는 동시성 문제를 고려하여 낙관적 락(Optimistic Lock) 또는 비관적 락(Pessimistic Lock) 적용을 검토합니다. 특히 `Sandbox` 상태 변경 등에 주의합니다.
--   **성능 최적화**: N+1 문제 방지를 위해 Fetch Join을 적절히 사용하고, 필요한 경우 인덱스를 추가합니다. 대용량 데이터 처리 시에는 배치 처리나 비동기 처리를 고려합니다.
--   **로깅**: 주요 서비스 메서드 호출, 예외 발생, 샌드박스 작업 등 중요한 이벤트에 대해 로그를 기록합니다.
--   **보안**: Spring Security를 사용하여 인증 및 인가를 처리하고, DTO 변환 시 민감 정보를 필터링합니다. 샌드박스 보안 정책을 철저히 적용합니다.
+1. **격리**: 샌드박스 환경은 호스트 시스템과 완전히 격리됩니다.
+2. **리소스 제한**: CPU, 메모리, 디스크 사용량을 제한합니다.
+3. **네트워크 제한**: 외부 네트워크 접근을 제한합니다.
+4. **실행 시간 제한**: 코드 실행 시간을 제한합니다.
+5. **코드 검사**: 실행 전 코드를 정적 분석하여 위험 요소를 식별합니다.
 
-이 객체 모델 설계는 시스템 개발의 기반을 제공하며, 실제 구현 과정에서 요구사항 변경이나 기술적 제약에 따라 수정될 수 있습니다.
+## 9. 성능 최적화
 
+시스템은 다음과 같은 성능 최적화 전략을 적용합니다:
+
+### 9.1 데이터베이스 최적화
+
+1. **인덱싱**: 자주 조회되는 필드에 인덱스를 설정합니다.
+2. **페이징**: 대량의 데이터 조회 시 페이징을 적용합니다.
+3. **지연 로딩**: 연관 엔티티는 필요할 때만 로드합니다.
+4. **캐싱**: 자주 접근하는 데이터는 캐시에 저장합니다.
+
+### 9.2 API 최적화
+
+1. **응답 압축**: 응답 데이터를 GZIP으로 압축합니다.
+2. **부분 응답**: 클라이언트가 필요한 필드만 반환합니다.
+3. **비동기 처리**: 시간이 오래 걸리는 작업은 비동기로 처리합니다.
+
+### 9.3 캐싱 전략
+
+1. **애플리케이션 캐시**: 자주 사용되는 데이터는 메모리에 캐싱합니다.
+2. **분산 캐시**: Redis를 사용하여 분산 환경에서 캐시를 공유합니다.
+3. **캐시 무효화**: 데이터 변경 시 관련 캐시를 무효화합니다.
+
+## 10. 확장성 설계
+
+시스템은 다음과 같은 확장성 설계를 적용합니다:
+
+### 10.1 수평적 확장
+
+1. **무상태 설계**: 서비스는 상태를 저장하지 않아 여러 인스턴스로 확장 가능합니다.
+2. **로드 밸런싱**: 여러 서비스 인스턴스 간에 부하를 분산합니다.
+3. **샤딩**: 데이터베이스를 여러 샤드로 분할하여 확장성을 높입니다.
+
+### 10.2 모듈식 설계
+
+1. **마이크로서비스**: 기능별로 독립적인 서비스로 분리하여 개별적으로 확장 가능합니다.
+2. **API 게이트웨이**: 클라이언트 요청을 적절한 서비스로 라우팅합니다.
+3. **이벤트 기반 통신**: 서비스 간 느슨한 결합을 위해 이벤트 기반 통신을 사용합니다.
+
+### 10.3 리소스 관리
+
+1. **자동 스케일링**: 부하에 따라 자동으로 리소스를 확장합니다.
+2. **컨테이너화**: Docker를 사용하여 일관된 환경을 제공합니다.
+3. **오케스트레이션**: Kubernetes를 사용하여 컨테이너를 관리합니다.
+
+## 11. 테스트 전략
+
+시스템은 다음과 같은 테스트 전략을 적용합니다:
+
+### 11.1 단위 테스트
+
+1. **서비스 계층**: 각 서비스 메서드의 비즈니스 로직을 테스트합니다.
+2. **레포지토리 계층**: 데이터 접근 로직을 테스트합니다.
+3. **모킹**: 외부 의존성은 모킹하여 격리된 테스트를 수행합니다.
+
+### 11.2 통합 테스트
+
+1. **API 테스트**: 컨트롤러 엔드포인트를 테스트합니다.
+2. **데이터베이스 통합**: 실제 데이터베이스와의 상호작용을 테스트합니다.
+3. **서비스 간 통합**: 여러 서비스 간의 상호작용을 테스트합니다.
+
+### 11.3 성능 테스트
+
+1. **부하 테스트**: 시스템이 높은 부하에서도 정상 작동하는지 테스트합니다.
+2. **스트레스 테스트**: 시스템의 한계를 테스트합니다.
+3. **내구성 테스트**: 장시간 실행 시 안정성을 테스트합니다.
+
+## 12. 배포 및 운영
+
+시스템은 다음과 같은 배포 및 운영 전략을 적용합니다:
+
+### 12.1 CI/CD 파이프라인
+
+1. **지속적 통합**: 코드 변경 시 자동으로 빌드 및 테스트를 수행합니다.
+2. **지속적 배포**: 테스트를 통과한 코드는 자동으로 배포합니다.
+3. **환경 분리**: 개발, 테스트, 스테이징, 프로덕션 환경을 분리합니다.
+
+### 12.2 모니터링 및 로깅
+
+1. **애플리케이션 모니터링**: 애플리케이션 성능 및 오류를 모니터링합니다.
+2. **인프라 모니터링**: 서버, 네트워크, 데이터베이스 등의 인프라를 모니터링합니다.
+3. **중앙 집중식 로깅**: 모든 로그를 중앙 저장소에 수집하여 분석합니다.
+4. **알림**: 문제 발생 시 즉시 알림을 보냅니다.
+
+### 12.3 장애 복구
+
+1. **백업 및 복구**: 정기적인 데이터 백업 및 복구 절차를 마련합니다.
+2. **고가용성**: 중요 컴포넌트는 다중화하여 단일 장애점을 제거합니다.
+3. **재해 복구**: 재해 발생 시 신속하게 복구할 수 있는 계획을 수립합니다.

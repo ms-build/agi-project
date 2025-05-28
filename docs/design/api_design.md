@@ -2,7 +2,7 @@
 
 ## 1. 개요
 
-이 문서는 Spring Boot 3.4.5, Java 17 기반의 통합 AGI 시스템을 위한 API 설계를 설명합니다. API는 RESTful 원칙을 따르며, WebSocket을 통해 실시간 통신을 지원합니다. 이 API는 Vue.js 프론트엔드 및 외부 시스템과의 연동을 위해 설계되었습니다.
+이 문서는 Spring Boot 3.4.5, Java 17 기반의 통합 AGI 시스템을 위한 API 설계를 설명합니다. API는 RESTful 원칙을 따르며, WebSocket을 통해 실시간 통신을 지원합니다. 이 API는 Vue.js 프론트엔드 및 외부 시스템과의 연동을 위해 설계되었으며, **샌드박스 환경에서의 안전한 코드 및 도구 실행**을 지원합니다.
 
 ## 2. API 설계 원칙
 
@@ -13,11 +13,13 @@
 5. **인증 및 권한 부여**: JWT(JSON Web Token)를 사용하여 안전한 인증 및 역할 기반 권한 부여를 구현합니다.
 6. **일관성**: API 엔드포인트, 요청/응답 구조, 에러 처리 방식의 일관성을 유지합니다.
 7. **문서화**: OpenAPI(Swagger)를 사용하여 API 명세를 자동으로 생성하고 문서화합니다.
+8. **보안**: 샌드박스 환경에서의 코드 실행 및 도구 사용에 대한 보안 정책을 적용합니다.
 
 ## 3. 인증 및 권한 부여
 
 - **인증**: 모든 API 요청(로그인/회원가입 제외)은 `Authorization: Bearer <JWT_TOKEN>` 헤더를 통해 JWT 토큰을 전달해야 합니다.
 - **권한 부여**: 사용자 역할(Role) 및 권한(Permission)에 따라 API 접근이 제어됩니다. 각 엔드포인트는 필요한 권한을 명시합니다.
+- **샌드박스 접근 제어**: 사용자는 자신이 생성한 샌드박스에만 접근할 수 있으며, 관리자는 모든 샌드박스에 접근할 수 있습니다.
 
 ## 4. 에러 처리
 
@@ -42,6 +44,7 @@
   - `404 Not Found`: 요청한 자원 없음
   - `409 Conflict`: 자원 충돌 (중복 생성 등)
   - `500 Internal Server Error`: 서버 내부 오류
+  - `503 Service Unavailable`: 서비스 일시적 사용 불가 (샌드박스 자원 부족 등)
 
 ## 5. RESTful API 엔드포인트
 
@@ -164,6 +167,51 @@
 - `GET /api/admin/logs`: 시스템 로그 조회 (관리자 권한)
 - `GET /api/admin/monitoring`: 시스템 모니터링 데이터 조회 (관리자 권한)
 
+### 5.15 샌드박스 관리 (`/api/sandbox`)
+
+- `POST /api/sandbox`: 새로운 샌드박스 생성
+- `GET /api/sandbox`: 사용자의 샌드박스 목록 조회
+- `GET /api/sandbox/{sandboxId}`: 특정 샌드박스 정보 조회
+- `PUT /api/sandbox/{sandboxId}/status`: 샌드박스 상태 변경 (시작, 중지, 일시정지 등)
+- `DELETE /api/sandbox/{sandboxId}`: 샌드박스 삭제
+- `GET /api/sandbox/{sandboxId}/resources`: 샌드박스 자원 사용량 조회
+- `PUT /api/sandbox/{sandboxId}/resources`: 샌드박스 자원 제한 설정 수정
+- `GET /api/sandbox/{sandboxId}/security`: 샌드박스 보안 정책 조회
+- `PUT /api/sandbox/{sandboxId}/security`: 샌드박스 보안 정책 수정
+- `GET /api/sandbox/templates`: 사용 가능한 샌드박스 템플릿 목록 조회
+- `POST /api/sandbox/templates`: 새로운 샌드박스 템플릿 생성 (관리자 권한)
+- `GET /api/sandbox/templates/{templateId}`: 특정 샌드박스 템플릿 정보 조회
+- `PUT /api/sandbox/templates/{templateId}`: 샌드박스 템플릿 수정 (관리자 권한)
+- `DELETE /api/sandbox/templates/{templateId}`: 샌드박스 템플릿 삭제 (관리자 권한)
+
+### 5.16 샌드박스 코드 실행 (`/api/sandbox/{sandboxId}/code`)
+
+- `POST /api/sandbox/{sandboxId}/code/execute`: 샌드박스 내에서 코드 실행
+- `GET /api/sandbox/{sandboxId}/code/executions`: 코드 실행 기록 조회
+- `GET /api/sandbox/{sandboxId}/code/executions/{executionId}`: 특정 코드 실행 결과 조회
+- `DELETE /api/sandbox/{sandboxId}/code/executions/{executionId}`: 코드 실행 기록 삭제
+- `POST /api/sandbox/{sandboxId}/code/interrupt`: 실행 중인 코드 중단
+
+### 5.17 샌드박스 파일 관리 (`/api/sandbox/{sandboxId}/files`)
+
+- `GET /api/sandbox/{sandboxId}/files`: 샌드박스 내 파일 목록 조회
+- `GET /api/sandbox/{sandboxId}/files/{path}`: 특정 파일 내용 조회
+- `POST /api/sandbox/{sandboxId}/files/{path}`: 파일 생성 또는 업데이트
+- `DELETE /api/sandbox/{sandboxId}/files/{path}`: 파일 삭제
+- `POST /api/sandbox/{sandboxId}/files/upload`: 파일 업로드
+- `GET /api/sandbox/{sandboxId}/files/download/{path}`: 파일 다운로드
+- `POST /api/sandbox/{sandboxId}/files/copy`: 파일 복사
+- `POST /api/sandbox/{sandboxId}/files/move`: 파일 이동
+- `POST /api/sandbox/{sandboxId}/files/zip`: 파일 압축
+- `POST /api/sandbox/{sandboxId}/files/unzip`: 파일 압축 해제
+
+### 5.18 샌드박스 포트 관리 (`/api/sandbox/{sandboxId}/ports`)
+
+- `GET /api/sandbox/{sandboxId}/ports`: 샌드박스 포트 매핑 목록 조회
+- `POST /api/sandbox/{sandboxId}/ports`: 새로운 포트 매핑 생성
+- `DELETE /api/sandbox/{sandboxId}/ports/{portId}`: 포트 매핑 삭제
+- `GET /api/sandbox/{sandboxId}/ports/expose/{containerPort}`: 특정 포트 외부 노출 URL 생성
+
 ## 6. WebSocket API 엔드포인트
 
 WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사용하여 메시지를 교환합니다.
@@ -174,12 +222,17 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
 - `/topic/stream/{sessionId}`: 특정 세션에 대한 스트리밍 응답 수신 (텍스트 생성 등)
 - `/topic/progress/{sessionId}`: 특정 세션의 장기 실행 작업 진행 상태 수신
 - `/user/queue/errors`: 현재 사용자에게 발생하는 오류 메시지 수신
+- `/topic/sandbox/{sandboxId}/output`: 샌드박스 내 실행 중인 프로세스의 출력 스트림 수신
+- `/topic/sandbox/{sandboxId}/status`: 샌드박스 상태 변경 알림 수신
+- `/topic/sandbox/{sandboxId}/resources`: 샌드박스 자원 사용량 실시간 업데이트 수신
 
 ### 6.2 발행 (Publish)
 
 - `/app/conversation`: 대화 메시지 전송 (세션 ID 포함)
 - `/app/stream-request`: 스트리밍 응답 요청 (세션 ID, 요청 내용 포함)
 - `/app/cancel-task`: 장기 실행 작업 취소 요청 (세션 ID, 작업 ID 포함)
+- `/app/sandbox/{sandboxId}/input`: 샌드박스 내 실행 중인 프로세스에 입력 전송
+- `/app/sandbox/{sandboxId}/command`: 샌드박스 내에서 명령어 실행 요청
 
 ## 7. 요청/응답 형식 (DTO 예시)
 
@@ -219,7 +272,8 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
   "parameters": {
     "query": "AGI 최신 기술 동향",
     "maxResults": 5
-  }
+  },
+  "sandboxId": "uuid-sandbox-123" // Optional, 샌드박스 내에서 실행할 경우
 }
 ```
 
@@ -237,12 +291,195 @@ WebSocket은 `/ws` 경로를 통해 연결됩니다. STOMP 프로토콜을 사�
 }
 ```
 
+### 7.5 샌드박스 생성 요청 (SandboxCreateRequest)
+
+```json
+{
+  "templateId": "python-dev", // Optional, 템플릿 기반 생성 시
+  "name": "Python 개발 환경",
+  "description": "Python 코드 개발 및 실행을 위한 샌드박스",
+  "imageName": "python",
+  "imageTag": "3.11-slim",
+  "resources": {
+    "cpuLimit": 2,
+    "memoryLimit": 2048,
+    "diskLimit": 10240,
+    "networkLimit": 1024,
+    "timeout": 3600
+  },
+  "security": {
+    "networkPolicy": {
+      "allowedHosts": ["api.github.com", "pypi.org"],
+      "allowedPorts": [80, 443]
+    },
+    "mountPolicy": {
+      "readOnlyPaths": ["/usr/lib", "/etc"],
+      "hiddenPaths": ["/etc/passwd", "/etc/shadow"]
+    },
+    "environmentVariables": {
+      "PYTHONPATH": "/workspace/lib",
+      "LANG": "en_US.UTF-8"
+    }
+  }
+}
+```
+
+### 7.6 샌드박스 응답 (SandboxResponse)
+
+```json
+{
+  "id": "uuid-sandbox-123",
+  "userId": "uuid-user-456",
+  "name": "Python 개발 환경",
+  "description": "Python 코드 개발 및 실행을 위한 샌드박스",
+  "status": "running",
+  "imageName": "python",
+  "imageTag": "3.11-slim",
+  "createdAt": "2025-05-28T13:00:00Z",
+  "startedAt": "2025-05-28T13:01:00Z",
+  "lastActive": "2025-05-28T14:15:00Z",
+  "expiresAt": "2025-05-29T13:00:00Z",
+  "resources": {
+    "cpuLimit": 2,
+    "memoryLimit": 2048,
+    "diskLimit": 10240,
+    "networkLimit": 1024,
+    "timeout": 3600,
+    "cpuUsage": 0.5,
+    "memoryUsage": 512,
+    "diskUsage": 1024
+  },
+  "workspace": {
+    "rootPath": "/workspace",
+    "sizeBytes": 1024000
+  }
+}
+```
+
+### 7.7 코드 실행 요청 (CodeExecutionRequest)
+
+```json
+{
+  "language": "python",
+  "code": "import numpy as np\nprint(np.random.rand(5))",
+  "workingDirectory": "/workspace/project", // Optional
+  "timeout": 30, // Optional, 초 단위
+  "environmentVariables": { // Optional
+    "PYTHONPATH": "/workspace/lib"
+  }
+}
+```
+
+### 7.8 코드 실행 응답 (CodeExecutionResponse)
+
+```json
+{
+  "executionId": "uuid-exec-def",
+  "status": "completed",
+  "startedAt": "2025-05-28T14:20:00Z",
+  "completedAt": "2025-05-28T14:20:02Z",
+  "exitCode": 0,
+  "stdout": "[0.12345678 0.23456789 0.34567891 0.45678912 0.56789123]",
+  "stderr": "",
+  "resourceUsage": {
+    "cpuTime": 0.1,
+    "memoryPeakBytes": 102400
+  }
+}
+```
+
+### 7.9 파일 업로드 요청 (FileUploadRequest)
+
+```json
+{
+  "path": "/workspace/project/data.csv",
+  "overwrite": true
+}
+// 파일 내용은 multipart/form-data 형식으로 전송
+```
+
+### 7.10 파일 목록 응답 (FileListResponse)
+
+```json
+{
+  "path": "/workspace/project",
+  "files": [
+    {
+      "name": "main.py",
+      "path": "/workspace/project/main.py",
+      "isDirectory": false,
+      "sizeBytes": 1024,
+      "mimeType": "text/x-python",
+      "lastModified": "2025-05-28T14:00:00Z"
+    },
+    {
+      "name": "data",
+      "path": "/workspace/project/data",
+      "isDirectory": true,
+      "sizeBytes": 4096,
+      "lastModified": "2025-05-28T13:50:00Z"
+    }
+  ]
+}
+```
+
+### 7.11 포트 매핑 요청 (PortMappingRequest)
+
+```json
+{
+  "containerPort": 8080,
+  "protocol": "tcp",
+  "description": "웹 서버"
+}
+```
+
+### 7.12 포트 매핑 응답 (PortMappingResponse)
+
+```json
+{
+  "id": "uuid-port-789",
+  "containerPort": 8080,
+  "hostPort": 49152,
+  "protocol": "tcp",
+  "description": "웹 서버",
+  "publicUrl": "https://sandbox-49152.agi-system.com",
+  "createdAt": "2025-05-28T14:30:00Z"
+}
+```
+
 ## 8. API 문서화
 
 - **OpenAPI(Swagger)**: Springdoc 라이브러리를 사용하여 API 명세를 자동으로 생성합니다.
 - **문서 접근**: `/swagger-ui.html` 경로를 통해 API 문서를 웹 인터페이스로 제공합니다.
 - **명세 파일**: `/v3/api-docs` 경로를 통해 OpenAPI 3.0 명세 파일을 JSON 형식으로 제공합니다.
 
-## 9. 결론
+## 9. 샌드박스 API 보안 고려사항
 
-이 API 설계는 통합 AGI 시스템의 다양한 기능을 외부 시스템 및 프론트엔드와 연동하기 위한 인터페이스를 정의합니다. RESTful 원칙과 WebSocket을 활용하여 효율적이고 실시간성 있는 통신을 지원하며, JWT 기반 인증과 표준화된 에러 처리, OpenAPI를 통한 문서화를 통해 개발 편의성과 시스템 안정성을 높입니다.
+### 9.1 자원 제한
+
+- 사용자별 최대 샌드박스 수 제한
+- 샌드박스별 CPU, 메모리, 디스크, 네트워크 사용량 제한
+- 코드 실행 시간 제한
+- 파일 크기 제한
+
+### 9.2 네트워크 보안
+
+- 샌드박스 내에서 접근 가능한 외부 호스트 및 포트 제한
+- 포트 매핑 시 임의의 높은 포트 번호 사용
+- 공개 URL 생성 시 인증 토큰 요구
+
+### 9.3 파일 시스템 보안
+
+- 샌드박스 작업 공간 격리
+- 민감한 시스템 파일 접근 제한
+- 업로드 파일 검사 (악성 코드, 크기, 타입 등)
+
+### 9.4 코드 실행 보안
+
+- 안전하지 않은 시스템 콜 차단
+- 프로세스 권한 제한
+- 자원 사용량 모니터링 및 제한
+
+## 10. 결론
+
+이 API 설계는 통합 AGI 시스템의 다양한 기능을 외부 시스템 및 프론트엔드와 연동하기 위한 인터페이스를 정의합니다. RESTful 원칙과 WebSocket을 활용하여 효율적이고 실시간성 있는 통신을 지원하며, JWT 기반 인증과 표준화된 에러 처리, OpenAPI를 통한 문서화를 통해 개발 편의성과 시스템 안정성을 높입니다. 특히 샌드박스 환경에서의 안전한 코드 및 도구 실행을 위한 API를 제공하여 확장성과 보안성을 강화합니다.

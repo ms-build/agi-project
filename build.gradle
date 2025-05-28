@@ -16,6 +16,9 @@ configurations {
 
 repositories {
     mavenCentral()
+    // Spring AI 저장소 추가
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
 }
 
 dependencies {
@@ -42,6 +45,18 @@ dependencies {
     implementation 'org.deeplearning4j:deeplearning4j-core:1.0.0-M2'
     implementation 'org.deeplearning4j:deeplearning4j-nlp:1.0.0-M2'
     implementation 'org.nd4j:nd4j-native-platform:1.0.0-M2'
+    
+    // JavaCV - 멀티모달 처리를 위한 컴퓨터 비전 라이브러리
+    implementation 'org.bytedeco:javacv-platform:1.5.9'
+    implementation 'org.bytedeco:opencv:4.7.0-1.5.9'
+    implementation 'org.bytedeco:ffmpeg:6.0-1.5.9'
+    
+    // Spring AI - 인공지능 통합 라이브러리
+    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter:0.8.0-SNAPSHOT'
+    implementation 'org.springframework.ai:spring-ai-core:0.8.0-SNAPSHOT'
+    
+    // Weka - 자가 학습 기능을 위한 머신러닝 라이브러리
+    implementation 'nz.ac.waikato.cms.weka:weka-stable:3.8.6'
     
     // 테스트
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -1,12 +1,12 @@
-package com.agi.sandbox;
+package com.agi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AgiSandboxApplication {
+public class AgiApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(AgiSandboxApplication.class, args);
+        SpringApplication.run(AgiApplication.class, args);
     }
 }

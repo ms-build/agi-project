@@ -1,10 +1,10 @@
 spring:
   application:
-    name: agi-sandbox
+    name: agi
   
   # 데이터소스 설정
   datasource:
-    url: jdbc:mysql://localhost:3306/agi_sandbox?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/agi?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
     username: root
     password: 
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -37,7 +37,7 @@ server:
 logging:
   level:
     root: INFO
-    com.agi.sandbox: DEBUG
+    com.agi: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
     

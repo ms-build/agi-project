@@ -1,4 +1,4 @@
-package com.agi.sandbox.config;
+package com.agi.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

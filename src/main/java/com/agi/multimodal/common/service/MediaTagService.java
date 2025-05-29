@@ -1,11 +1,11 @@
-package com.agi.user.service;
+package com.agi.multimodal.common.service;
 
 import org.springframework.stereotype.Service;
 
 /**
- * 사용자 관련 서비스
+ * 멀티모달 공통 서비스
  */
 @Service
-public class UserService {
+public class MediaTagService {
     // 서비스 구현체는 추후 개발
 }

@@ -1,5 +1,6 @@
 package com.agi.plan.entity;
 
+import com.agi.plan.enums.PlanStatus;
 import com.agi.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -81,9 +82,5 @@ public class Plan {
     public void updateMetadata(String metadata) {
         this.metadata = metadata;
         this.updatedAt = LocalDateTime.now();
-    }
-    
-    public enum PlanStatus {
-        CREATED, IN_PROGRESS, COMPLETED, FAILED
     }
 }

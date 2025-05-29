@@ -4,13 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
-import java.util.Set;
-
 /**
- * 지식 생성 요청 DTO
+ * 지식 수정 요청 DTO
  */
 @Getter
-public class KnowledgeCreateRequest {
+public class KnowledgeUpdateRequest {
     
     @NotBlank(message = "제목은 필수 입력값입니다")
     private String title;
@@ -24,7 +22,5 @@ public class KnowledgeCreateRequest {
     @NotNull(message = "관련성 점수는 필수 입력값입니다")
     private Double relevanceScore;
     
-    private Boolean verified = false;
-    
-    private Set<String> tags;
+    private Boolean verified;
 }

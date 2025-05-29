@@ -17,7 +17,8 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Message {
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "conversation_id", nullable = false)
@@ -40,8 +41,7 @@ public class Message {
     private Map<String, Object> metadata = new HashMap<>();
     
     @Builder
-    public Message(String id, Conversation conversation, MessageType role, String content, Map<String, Object> metadata) {
-        this.id = id;
+    public Message(Conversation conversation, MessageType role, String content, Map<String, Object> metadata) {
         this.conversation = conversation;
         this.role = role;
         this.content = content;

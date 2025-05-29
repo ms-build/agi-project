@@ -1,4 +1,4 @@
-package com.agi.multimodal.image.entity;
+package com.agi.multimodal.video.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -7,8 +7,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
@@ -17,17 +15,16 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.HashSet;
 
-import com.agi.multimodal.image.enums.ImageFormat;
+import com.agi.multimodal.video.enums.VideoFormat;
 import com.agi.multimodal.common.entity.MediaTag;
-import com.agi.user.entity.User;
 
 @Entity
-@Table(name = "image_metadata")
+@Table(name = "video_metadata")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ImageMetadata {
+public class VideoMetadata {
     
     @Id
     private String id;
@@ -47,40 +44,29 @@ public class ImageMetadata {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ImageFormat format;
+    private VideoFormat format;
+    
+    private Integer duration;
+    
+    private String resolution;
     
     private Integer width;
     
     private Integer height;
     
-    private String resolution;
+    private Integer frameRate;
     
-    private String colorSpace;
+    private String codec;
     
-    private Boolean hasAlphaChannel;
+    private Integer bitRate;
     
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
     
     private LocalDateTime createdAt;
     
+    private String userId;
+    
     @ManyToMany
     private Set<MediaTag> tags = new HashSet<>();
-    
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
-    
-    // DTO 변환에 필요한 추가 메서드
-    public String getFilename() {
-        return fileName;
-    }
-    
-    public String getUrl() {
-        return filePath;
-    }
-    
-    public Long getSize() {
-        return fileSize;
-    }
 }

@@ -1,84 +1,80 @@
 package com.agi.user.entity;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "users")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true)
     private String username;
+    
+    @Column(nullable = false, unique = true)
+    private String email;
     
     @Column(nullable = false)
     private String password;
     
-    @Column(nullable = false, unique = true, length = 100)
-    private String email;
+    private String firstName;
+    
+    private String lastName;
     
     @Column(nullable = false, length = 50)
     private String nickname;
     
-    private boolean isActive;
-    
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false)
     private LocalDateTime createdAt;
     
     private LocalDateTime lastLoginAt;
     
+    @Column(nullable = false)
+    private Boolean isActive;
+    
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserRole> userRoles = new ArrayList<>();
+    private Set<UserRole> userRoles = new HashSet<>();
     
-    @Builder
-    public User(String username, String password, String email, String nickname) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-        this.nickname = nickname;
-        this.isActive = true;
-        this.createdAt = LocalDateTime.now();
-    }
+    private String profileImageUrl;
     
-    public void updateProfile(String nickname, String email) {
-        this.nickname = nickname;
-        this.email = email;
-    }
+    private String preferences;
     
-    public void changePassword(String newPassword) {
-        this.password = newPassword;
-    }
-    
-    public void updateLastLoginAt() {
-        this.lastLoginAt = LocalDateTime.now();
-    }
-    
-    public void activate() {
-        this.isActive = true;
-    }
-    
-    public void deactivate() {
-        this.isActive = false;
-    }
-    
+    /**
+     * 역할 추가 메서드
+     */
     public void addRole(Role role) {
-        UserRole userRole = UserRole.builder()
-                .user(this)
-                .role(role)
-                .build();
+        UserRole userRole = new UserRole(this, role);
         this.userRoles.add(userRole);
     }
     
+    /**
+     * 역할 제거 메서드
+     */
     public void removeRole(Role role) {
         this.userRoles.removeIf(userRole -> userRole.getRole().equals(role));
     }

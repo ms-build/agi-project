@@ -1,6 +1,7 @@
 package com.agi.user.dto.response;
 
 import com.agi.user.entity.User;
+import com.agi.user.entity.UserRole;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -35,11 +36,11 @@ public class UserDto {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
-                .isActive(user.isActive())
+                .isActive(user.getIsActive())
                 .createdAt(user.getCreatedAt())
                 .lastLoginAt(user.getLastLoginAt())
-                .roles(user.getRoles().stream()
-                        .map(role -> role.getName())
+                .roles(user.getUserRoles().stream()
+                        .map(userRole -> userRole.getRole().getName())
                         .collect(Collectors.toSet()))
                 .build();
     }

@@ -1,77 +1,64 @@
 package com.agi.tool.entity;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+
+import com.agi.tool.enums.ToolType;
+import com.agi.tool.enums.ToolStatus;
 
 @Entity
 @Table(name = "tool")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Tool {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     
-    @Column(nullable = false, unique = true, length = 100)
+    @Id
+    private String id;
+    
+    @Column(nullable = false, unique = true)
     private String name;
     
-    @Column(nullable = false, length = 200)
     private String description;
     
-    @Column(columnDefinition = "TEXT")
-    private String documentation;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ToolType type;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ToolStatus status;
     
     @Column(nullable = false)
-    private boolean isActive;
-    
-    @Column(columnDefinition = "JSON")
-    private String schema;
-    
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     private LocalDateTime updatedAt;
     
-    @OneToMany(mappedBy = "tool", cascade = CascadeType.ALL, orphanRemoval = true)
+    private String version;
+    
+    @Column(columnDefinition = "TEXT")
+    private String schema;
+    
+    private String endpoint;
+    
+    private Boolean isPublic;
+    
+    @OneToMany(mappedBy = "tool")
     private List<ToolParameter> parameters = new ArrayList<>();
     
-    @Builder
-    public Tool(String name, String description, String documentation, String schema) {
-        this.name = name;
-        this.description = description;
-        this.documentation = documentation;
-        this.schema = schema;
-        this.isActive = true;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = this.createdAt;
-    }
-    
-    public void update(String description, String documentation, String schema) {
-        this.description = description;
-        this.documentation = documentation;
-        this.schema = schema;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void activate() {
-        this.isActive = true;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void deactivate() {
-        this.isActive = false;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void addParameter(ToolParameter parameter) {
-        this.parameters.add(parameter);
-        this.updatedAt = LocalDateTime.now();
-    }
+    @OneToMany(mappedBy = "tool")
+    private List<ToolExecution> executions = new ArrayList<>();
 }

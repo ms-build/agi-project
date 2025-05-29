@@ -1,51 +1,47 @@
 package com.agi.multimodal.common.entity;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToMany;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.HashSet;
+
+import com.agi.multimodal.audio.entity.AudioMetadata;
+import com.agi.multimodal.image.entity.ImageMetadata;
+import com.agi.multimodal.video.entity.VideoMetadata;
 
 @Entity
 @Table(name = "media_tag")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class MediaTag {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
     
-    @Column(nullable = false, length = 100)
+    @Id
+    private String id;
+    
+    @Column(nullable = false, unique = true)
     private String name;
+    
+    private String description;
     
     @Column(nullable = false)
     private LocalDateTime createdAt;
     
-    @Column(length = 255)
-    private String description;
+    @ManyToMany(mappedBy = "tags")
+    private Set<ImageMetadata> images = new HashSet<>();
     
-    @Column(name = "confidence_score")
-    private Float confidenceScore;
+    @ManyToMany(mappedBy = "tags")
+    private Set<AudioMetadata> audios = new HashSet<>();
     
-    @Builder
-    public MediaTag(String name, String description, Float confidenceScore) {
-        this.name = name;
-        this.description = description;
-        this.confidenceScore = confidenceScore;
-        this.createdAt = LocalDateTime.now();
-    }
-    
-    public void updateName(String name) {
-        this.name = name;
-    }
-    
-    public void updateDescription(String description) {
-        this.description = description;
-    }
-    
-    public void updateConfidenceScore(Float confidenceScore) {
-        this.confidenceScore = confidenceScore;
-    }
+    @ManyToMany(mappedBy = "tags")
+    private Set<VideoMetadata> videos = new HashSet<>();
 }

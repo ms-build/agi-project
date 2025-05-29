@@ -5,45 +5,41 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 지식 정보 응답 DTO
+ * 지식 응답 DTO
  */
 @Getter
 @Builder
 public class KnowledgeDto {
-    private String id;
+    private Long id;
     private String title;
     private String content;
-    private Long userId;
     private String source;
+    private Double relevanceScore;
+    private Boolean verified;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<String> tags;
-    private Integer relevanceScore;
-
+    private Set<String> tags;
+    
     /**
-     * Knowledge 엔티티로부터 KnowledgeDto 객체 생성
-     * 
-     * @param knowledge Knowledge 엔티티
-     * @return KnowledgeDto 객체
+     * 엔티티에서 DTO로 변환
      */
     public static KnowledgeDto fromEntity(Knowledge knowledge) {
         return KnowledgeDto.builder()
                 .id(knowledge.getId())
                 .title(knowledge.getTitle())
                 .content(knowledge.getContent())
-                .userId(knowledge.getUser().getId())
                 .source(knowledge.getSource())
+                .relevanceScore(knowledge.getRelevanceScore())
+                .verified(knowledge.getVerified())
                 .createdAt(knowledge.getCreatedAt())
                 .updatedAt(knowledge.getUpdatedAt())
-                .tags(knowledge.getTags() != null ? 
-                        knowledge.getTags().stream()
-                                .map(tag -> tag.getName())
-                                .collect(Collectors.toList()) : 
-                        null)
+                .tags(knowledge.getKnowledgeTags().stream()
+                        .map(tag -> tag.getTag())
+                        .collect(Collectors.toSet()))
                 .build();
     }
 }

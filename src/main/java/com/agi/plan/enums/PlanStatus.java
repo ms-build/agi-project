@@ -1,11 +1,11 @@
 package com.agi.plan.enums;
 
 /**
- * 계획 상태 Enum
+ * 계획 상태 열거형
  */
 public enum PlanStatus {
-    DRAFT,
-    ACTIVE,
-    COMPLETED,
-    CANCELLED
+    CREATED, 
+    IN_PROGRESS, 
+    COMPLETED, 
+    FAILED
 }

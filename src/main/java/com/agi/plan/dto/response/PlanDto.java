@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Getter
 @Builder
 public class PlanDto {
-    private String id;
+    private Long id;
     private Long userId;
     private String title;
     private String description;

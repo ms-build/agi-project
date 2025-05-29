@@ -1,4 +1,4 @@
-package com.agi.learning.feedback.entity;
+package com.agi.tool.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -8,52 +8,55 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.EnumType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Builder;
 import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
-import com.agi.learning.feedback.enums.FeedbackCategory;
+import com.agi.tool.enums.ToolStatus;
 import com.agi.user.entity.User;
-import com.agi.conversation.entity.Conversation;
 
 @Entity
-@Table(name = "feedback")
+@Table(name = "tool_execution")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Feedback {
+public class ToolExecution {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
+    
+    @ManyToOne
+    @JoinColumn(name = "tool_id", nullable = false)
+    private Tool tool;
     
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     
-    @ManyToOne
-    @JoinColumn(name = "conversation_id")
-    private Conversation conversation;
+    @Column(nullable = false)
+    private LocalDateTime executedAt;
+    
+    private LocalDateTime completedAt;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FeedbackCategory category;
+    private ToolStatus status;
     
-    @Column(nullable = false)
-    private Integer score;
+    @Column(columnDefinition = "JSON")
+    private String parameters;
+    
+    @Column(columnDefinition = "JSON")
+    private String result;
     
     @Column(columnDefinition = "TEXT")
-    private String comment;
+    private String errorMessage;
     
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private Long executionTimeMs;
+    
+    private String conversationId;
     
     private String messageId;
-    
-    private String context;
 }

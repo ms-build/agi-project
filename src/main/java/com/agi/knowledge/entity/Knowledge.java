@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * 지식 엔티티
+ */
 @Entity
 @Table(name = "knowledge")
 @Getter
@@ -19,64 +22,76 @@ public class Knowledge {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false)
     private String title;
     
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
     
     @Column(nullable = false)
     private String source;
     
     @Column(nullable = false)
-    private Double confidence;
+    private Double relevanceScore;
+    
+    @Column(nullable = false)
+    private Boolean verified;
     
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
     private LocalDateTime updatedAt;
     
-    @Column(columnDefinition = "JSON")
-    private String metadata;
-    
-    @ManyToMany
-    @JoinTable(
-        name = "knowledge_tags",
-        joinColumns = @JoinColumn(name = "knowledge_id"),
-        inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<KnowledgeTag> tags = new HashSet<>();
+    @OneToMany(mappedBy = "knowledge", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<KnowledgeTag> knowledgeTags = new HashSet<>();
     
     @Builder
-    public Knowledge(String title, String content, String source, Double confidence) {
+    public Knowledge(String title, String content, String source, Double relevanceScore, Boolean verified) {
         this.title = title;
         this.content = content;
         this.source = source;
-        this.confidence = confidence;
+        this.relevanceScore = relevanceScore;
+        this.verified = verified;
         this.createdAt = LocalDateTime.now();
-        this.updatedAt = this.createdAt;
     }
     
-    public void update(String title, String content, String source, Double confidence) {
+    /**
+     * 지식 내용 업데이트
+     */
+    public void updateContent(String title, String content, String source) {
         this.title = title;
         this.content = content;
         this.source = source;
-        this.confidence = confidence;
         this.updatedAt = LocalDateTime.now();
     }
     
-    public void updateMetadata(String metadata) {
-        this.metadata = metadata;
+    /**
+     * 관련성 점수 업데이트
+     */
+    public void updateRelevanceScore(Double relevanceScore) {
+        this.relevanceScore = relevanceScore;
         this.updatedAt = LocalDateTime.now();
     }
     
+    /**
+     * 검증 상태 업데이트
+     */
+    public void setVerified(Boolean verified) {
+        this.verified = verified;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * 태그 추가
+     */
     public void addTag(KnowledgeTag tag) {
-        this.tags.add(tag);
-        this.updatedAt = LocalDateTime.now();
+        this.knowledgeTags.add(tag);
     }
     
+    /**
+     * 태그 제거
+     */
     public void removeTag(KnowledgeTag tag) {
-        this.tags.remove(tag);
-        this.updatedAt = LocalDateTime.now();
+        this.knowledgeTags.remove(tag);
     }
 }

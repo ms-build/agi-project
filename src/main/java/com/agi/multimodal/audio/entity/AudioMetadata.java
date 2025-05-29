@@ -1,4 +1,4 @@
-package com.agi.multimodal.image.entity;
+package com.agi.multimodal.audio.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -17,17 +17,17 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.HashSet;
 
-import com.agi.multimodal.image.enums.ImageFormat;
+import com.agi.multimodal.audio.enums.AudioFormat;
 import com.agi.multimodal.common.entity.MediaTag;
 import com.agi.user.entity.User;
 
 @Entity
-@Table(name = "image_metadata")
+@Table(name = "audio_metadata")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ImageMetadata {
+public class AudioMetadata {
     
     @Id
     private String id;
@@ -47,17 +47,17 @@ public class ImageMetadata {
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ImageFormat format;
+    private AudioFormat format;
     
-    private Integer width;
+    private Integer duration;
     
-    private Integer height;
+    private Integer sampleRate;
     
-    private String resolution;
+    private Integer channels;
     
-    private String colorSpace;
+    private Integer bitRate;
     
-    private Boolean hasAlphaChannel;
+    private String codec;
     
     @Column(nullable = false)
     private LocalDateTime uploadedAt;
@@ -70,17 +70,4 @@ public class ImageMetadata {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
-    
-    // DTO 변환에 필요한 추가 메서드
-    public String getFilename() {
-        return fileName;
-    }
-    
-    public String getUrl() {
-        return filePath;
-    }
-    
-    public Long getSize() {
-        return fileSize;
-    }
 }

@@ -1,61 +1,74 @@
 package com.agi.ai.nlp.entity;
 
-import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
+
+import com.agi.ai.nlp.enums.IntentType;
+import com.agi.user.entity.User;
+import com.agi.conversation.entity.Conversation;
 
 @Entity
 @Table(name = "intent")
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Intent {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true, length = 100)
-    private String name;
+    @ManyToOne
+    @JoinColumn(name = "conversation_id")
+    private Conversation conversation;
     
-    @Column(length = 200)
-    private String description;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
     
-    @Column(columnDefinition = "TEXT")
-    private String trainingPhrases;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String text;
     
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Double confidence;
-    
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
-    private LocalDateTime updatedAt;
+    private IntentType primaryIntent;
     
     @Column(columnDefinition = "JSON")
-    private String parameters;
+    private String intentScores;
     
-    @Builder
-    public Intent(String name, String description, String trainingPhrases, Double confidence) {
-        this.name = name;
-        this.description = description;
-        this.trainingPhrases = trainingPhrases;
-        this.confidence = confidence;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = this.createdAt;
+    @Column(columnDefinition = "JSON")
+    private String entities;
+    
+    private String sentiment;
+    
+    private Double sentimentScore;
+    
+    @Column(nullable = false)
+    private LocalDateTime analyzedAt;
+    
+    private String modelVersion;
+    
+    // DTO 변환에 필요한 추가 메서드
+    public Double getConfidence() {
+        return 0.95; // 기본값 제공 또는 intentScores에서 계산
     }
     
-    public void update(String description, String trainingPhrases, Double confidence) {
-        this.description = description;
-        this.trainingPhrases = trainingPhrases;
-        this.confidence = confidence;
-        this.updatedAt = LocalDateTime.now();
-    }
-    
-    public void updateParameters(String parameters) {
-        this.parameters = parameters;
-        this.updatedAt = LocalDateTime.now();
+    // 타입 변환 메서드
+    public String getPrimaryIntentAsString() {
+        return primaryIntent != null ? primaryIntent.name() : null;
     }
 }

@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @Getter
 @Builder
 public class PlanStepDto {
-    private String id;
-    private String planId;
+    private Long id;
+    private Long planId;
     private String content;
     private Integer order;
     private PlanStepStatus status;
@@ -35,14 +35,15 @@ public class PlanStepDto {
         return PlanStepDto.builder()
                 .id(planStep.getId())
                 .planId(planStep.getPlan().getId())
-                .content(planStep.getContent())
-                .order(planStep.getOrder())
+                .content(planStep.getDescription())
+                .order(planStep.getOrderIndex())
                 .status(planStep.getStatus())
-                .expectedResult(planStep.getExpectedResult())
-                .actualResult(planStep.getActualResult())
-                .estimatedDuration(planStep.getEstimatedDuration())
-                .actualDuration(planStep.getActualDuration())
-                .startedAt(planStep.getStartedAt())
+                .actualResult(planStep.getResult())
+                // 아래 필드들은 엔티티에 없으므로 null로 설정
+                .expectedResult(null)
+                .estimatedDuration(null)
+                .actualDuration(null)
+                .startedAt(null)
                 .completedAt(planStep.getCompletedAt())
                 .build();
     }

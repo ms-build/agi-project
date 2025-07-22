@@ -59,7 +59,7 @@ public class Message {
         this.metadata.put(key, value);
     }
     
-    public void setEmbedding(byte[] embedding) {
+    public void updateEmbedding(byte[] embedding) {
         this.embedding = embedding;
     }
 }

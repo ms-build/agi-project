@@ -76,7 +76,7 @@ public class Knowledge {
     /**
      * 검증 상태 업데이트
      */
-    public void setVerified(Boolean verified) {
+    public void updateVerified(Boolean verified) {
         this.verified = verified;
         this.updatedAt = LocalDateTime.now();
     }
